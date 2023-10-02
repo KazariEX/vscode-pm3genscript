@@ -1,0 +1,25 @@
+{
+  "name": "pm3gen-script-syntax",
+  "displayName": "pm3gen-script-syntax",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.54.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "pm3genscript",
+      "aliases": ["pm3genscript", "pm3genscript"],
+      "extensions": [".p3s"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "pm3genscript",
+      "scopeName": "source.p3s",
+      "path": "./syntaxes/pm3genscript.tmLanguage.json"
+    }]
+  }
+}
