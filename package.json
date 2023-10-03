@@ -7,24 +7,24 @@
     "vscode": "^1.54.0"
   },
   "categories": [
-    "Programming Languages"
+    "Other"
   ],
-  "main": "./out/extension.js",
+  "main": "./client/out/extension",
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "compile": "tsc -b",
+    "watch": "tsc -b -w"
   },
   "contributes": {
     "languages": [
       {
         "id": "pm3genscript",
         "aliases": [
-          "pm3genscript",
+          "Pokemon Third Generation Script",
           "pm3genscript"
         ],
         "extensions": [
-          ".ptc"
+          ".pts"
         ],
         "configuration": "./language-configuration.json"
       }
@@ -33,18 +33,18 @@
       {
         "language": "pm3genscript",
         "scopeName": "source.pm3genscript",
-        "path": "./src/syntaxes/syntax.json"
+        "path": "./syntax.json"
       }
     ],
     "snippets": [
       {
         "language": "pm3genscript",
-        "path": "./src/snippets/snippets.json"
+        "path": "./snippets.json"
       }
     ]
   },
   "devDependencies": {
-    "@types/node": "^20.8.1",
+    "@types/node": "^20.8.2",
     "@types/vscode": "^1.82.0"
   }
 }

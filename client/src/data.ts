@@ -1,5 +1,5 @@
 type WordData = {
-    [k in keyof any]: {
+    [K in keyof any]: {
         alias?: Array<string>,
         bytes?: number,
         description?: {
@@ -912,47 +912,714 @@ const characters: WordData = {
             }
         ]
     },
-    // 0x1B: "comparebanks",
-    // 0x1C: "comparebanktobyte",
-    // 0x1D: "comparebanktofarbyte",
-    // 0x1E: "comparefarbytetobank",
-    // 0x1F: "comparefarbytetobyte",
-    // 0x20: "comparefarbytes",
-    // 0x21: "compare",
-    // 0x22: "comparevars",
-    // 0x23: "callasm",
-    // 0x24: "cmd24",
-    // 0x25: "special",
-    // 0x26: "special2",
-    // 0x27: "waitstate",
-    // 0x28: "pause",
-    // 0x29: "setflag",
-    // 0x2A: "clearflag",
-    // 0x2B: "checkflag",
-    // 0x2C: "cmd2c",
-    // 0x2D: "checkdailyflags",
-    // 0x2E: "resetvars",
-    // 0x2F: "sound",
-    // 0x30: "checksound",
-    // 0x31: "fanfare",
-    // 0x32: "waitfanfare",
-    // 0x33: "playsong",
-    // 0x34: "playsong2",
-    // 0x35: "fadedefault",
-    // 0x36: "fadesong",
-    // 0x37: "fadeout",
-    // 0x38: "fadein",
-    // 0x39: "warp",
-    // 0x3A: "warpmuted",
-    // 0x3B: "warpwalk",
-    // 0x3C: "warphole",
-    // 0x3D: "warpteleport",
-    // 0x3E: "warp3",
-    // 0x3F: "setwarpplace",
-    // 0x40: "warp4",
-    // 0x41: "warp5",
-    // 0x42: "getplayerpos",
-    // 0x43: "countpokemon",
+    "comparebanks": {
+        value: 0x1B,
+        description: {
+            en: "Compares two banks.",
+            zh: "比较两个存储体。"
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "bank #1",
+                description: "Word - Bank #1"
+            },
+            {
+                name: "bank #2",
+                description: "Word - Bank #2"
+            }
+        ]
+    },
+    "comparebanktobyte": {
+        value: 0x1C,
+        description: {
+            en: "Compares a variable stored in a buffer to a byte value.",
+            zh: "将存储在缓冲区中的变量与字节值进行比较。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank #"
+            },
+            {
+                name: "value",
+                description: "Byte - Byte value to compare variable to"
+            }
+        ]
+    },
+    "comparebanktofarbyte": {
+        value: 0x1D,
+        description: {
+            en: "Compares a bank with a byte at some location.",
+            zh: "将存储体与某个位置的字节进行比较。"
+        },
+        bytes: 6,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank #"
+            },
+            {
+                name: "pointer",
+                description: "Pointer - Pointer to a byte value to compare variable to"
+            }
+        ]
+    },
+    "comparefarbytetobank": {
+        value: 0x1E,
+        description: {
+            en: "Compares a byte at some location to a buffered variable. The reverse of comparevartofarbyte.",
+            zh: "将某个位置的字节与缓冲变量进行比较。与 comparebanktofarbyte 相反。"
+        },
+        bytes: 6,
+        params: [
+            {
+                name: "pointer",
+                description: "Pointer - Pointer to a byte value to compare variable to"
+            },
+            {
+                name: "bank",
+                description: "Byte - Bank #"
+            }
+        ]
+    },
+    "comparefarbytetobyte": {
+        value: 0x1F,
+        description: {
+            en: "Compares a byte at some location to a byte value.",
+            zh: "将某个位置的字节与字节值进行比较。"
+        },
+        bytes: 6,
+        params: [
+            {
+                name: "pointer",
+                description: "Pointer - Pointer to a byte value to compare with"
+            },
+            {
+                name: "value",
+                description: "Byte - Byte value to compare with"
+            }
+        ]
+    },
+    "comparefarbytes": {
+        value: 0x20,
+        description: {
+            en: "Compares a byte at some location to a byte at another location.",
+            zh: "将某个位置的字节与另一位置的字节进行比较。"
+        },
+        bytes: 9,
+        params: [
+            {
+                name: "pointer",
+                description: "Pointer - Pointer to a byte value to compare with"
+            },
+            {
+                name: "pointer",
+                description: "Pointer - Pointer to a byte value to compare with"
+            }
+        ]
+    },
+    "compare": {
+        value: 0x21,
+        description: {
+            en: "Compares variable A to a value.",
+            zh: "将变量 A 与值进行比较。"
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "variable A",
+                description: "Word - Variable A"
+            },
+            {
+                name: "value",
+                description: "Word - Value to compare A to"
+            }
+        ]
+    },
+    "comparevars": {
+        value: 0x22,
+        description: {
+            en: "Compares two variables.",
+            zh: "比较两个变量。"
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "variable A",
+                description: "Word - Variable A"
+            },
+            {
+                name: "variable B",
+                description: "Word - Variable B"
+            }
+        ]
+    },
+    "callasm": {
+        value: 0x23,
+        description: {
+            en: "Calls a custom ASM routine.",
+            zh: "调用自定义 ASM 例程。"
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "pointer",
+                description: "Pointer - Address of custom ASM routine"
+            }
+        ]
+    },
+    "cmd24": {
+        value: 0x24,
+        description: {
+            en: "This command is currently under investigation, No detailed information is available at this time."
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "pointer",
+                description: "Pointer - ???"
+            }
+        ]
+    },
+    "special": {
+        value: 0x25,
+        description: {
+            en: "Calls a special event.",
+            zh: "调用特殊事件。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "event",
+                description: "Word - Event # to call"
+            }
+        ]
+    },
+    "special2": {
+        value: 0x26,
+        description: {
+            en: "Like special, but can store a returned value.",
+            zh: "类似 special，但是可以存储返回值。"
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "variable",
+                description: "Word - Variable to store returned value in"
+            },
+            {
+                name: "event",
+                description: "Word - Special event to call"
+            }
+        ]
+    },
+    "waitstate": {
+        value: 0x27,
+        description: {
+            en: "Sets the script to a wait state, useful for some specials and commands.",
+            zh: "将脚本设置为等待状态，对于某些特殊功能和命令很有用。"
+        },
+        bytes: 1
+    },
+    "pause": {
+        value: 0x28,
+        description: {
+            en: "Pauses script execution for a short amount of time.",
+            zh: "将脚本的执行暂停一段时间。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "delay",
+                description: "Word - Delay"
+            }
+        ]
+    },
+    "setflag": {
+        value: 0x29,
+        description: {
+            en: "Sets a flag for later use.",
+            zh: "设置一个标志供以后使用。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "flag",
+                description: "Word - Flag #"
+            }
+        ]
+    },
+    "clearflag": {
+        value: 0x2A,
+        description: {
+            en: "Clears the value of a flag.",
+            zh: "清除标志的值。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "flag",
+                description: "Word - Flag #"
+            }
+        ]
+    },
+    "checkflag": {
+        value: 0x2B,
+        description: {
+            en: "Checks the value of a flag.",
+            zh: "检查标志的值。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "flag",
+                description: "Word - Flag #"
+            }
+        ]
+    },
+    "cmd2C": {
+        value: 0x2C,
+        description: {
+            en: "This command is currently under investigation, No detailed information is available at this time."
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "???",
+                description: "Word - ???"
+            },
+            {
+                name: "???",
+                description: "Word - ???"
+            }
+        ]
+    },
+    "checkdailyflags": {
+        value: 0x2D,
+        description: {
+            en: "Checks the daily flags to see if any of them have been set already. but only if they were set previously, Then it dears those fags. R / S / E only."
+        },
+        bytes: 1
+    },
+    "resetvars": {
+        value: 0x2E,
+        description: {
+            en: "Resets the value of variables 0x8000, 0x8001 and 0x8002.",
+            zh: "重置变量 0x8000，0x8001 和 0x8002 的值。"
+        },
+        bytes: 1
+    },
+    "sound": {
+        value: 0x2F,
+        description: {
+            en: "Plays a sound.",
+            zh: "播放声音。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "sound",
+                description: "Word - Sound #"
+            }
+        ]
+    },
+    "checksound": {
+        value: 0x30,
+        description: {
+            en: "Checks if a sound, a fanfare or a song is currently being played.",
+            zh: "检查当前是否正在播放声音、效果音或音乐。"
+        },
+        bytes: 1
+    },
+    "fanfare": {
+        value: 0x31,
+        description: {
+            en: "Plays a Sappy song as a fanfare.",
+            zh: "播放效果音。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "fanfare",
+                description: "Word - Sappy song # to play."
+            }
+        ]
+    },
+    "waitfanfare": {
+        value: 0x32,
+        description: {
+            en: "Waits for fanfare to finish.",
+            zh: "等待效果音结束。"
+        },
+        bytes: 1
+    },
+    "playsong": {
+        value: 0x33,
+        description: {
+            en: "Switches to another Sappy song.",
+            zh: "播放音乐。"
+        },
+        bytes: 4,
+        params: [
+            {
+                name: "song",
+                description: "Word - Sappy song # to play"
+            },
+            {
+                name: "???",
+                description: "Byte - ???"
+            }
+        ]
+    },
+    "playsong2": {
+        value: 0x34,
+        description: {
+            en: "Switches to another Sappy song.",
+            zh: "播放音乐。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "song",
+                description: "Word - Sappy song # to play"
+            }
+        ]
+    },
+    "fadedefault": {
+        value: 0x35,
+        description: {
+            en: "Gently fades the current music back to the map's default song.",
+            zh: "从当前正在播放的音乐淡出至地图默认音乐。"
+        },
+        bytes: 1
+    },
+    "fadesong": {
+        value: 0x36,
+        description: {
+            en: "Gently fades into another Sappy song.",
+            zh: "从地图默认音乐淡入至指定音乐。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "song",
+                description: "Word - Sappy song # to fade to"
+            }
+        ]
+    },
+    "fadeout": {
+        value: 0x37,
+        description: {
+            en: "Fades out the currently playing Sappy song.",
+            zh: "淡出当前正在播放的音乐。"
+        },
+        bytes: 2,
+        params: [
+            {
+                name: "speed",
+                description: "Byte - Fading speed"
+            }
+        ]
+    },
+    "fadein": {
+        value: 0x38,
+        description: {
+            en: "Fades the currently playing Sappy song back in.",
+            zh: "淡入当前正在播放的音乐。"
+        },
+        bytes: 2,
+        params: [
+            {
+                name: "speed",
+                description: "Byte - Fading speed"
+            }
+        ]
+    },
+    "warp": {
+        value: 0x39,
+        description: {
+            en: "Warps the player to another map.",
+            zh: "跳转到另一张地图。"
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            },
+            {
+                name: "exit",
+                description: "Byte - Exit # to warp to"
+            },
+            {
+                name: "X",
+                description: "Word - X coordinate"
+            },
+            {
+                name: "Y",
+                description: "Word - Y coordinate"
+            }
+        ]
+    },
+    "warpmuted": {
+        value: 0x3A,
+        description: {
+            en: "Warps the player to another map. No sound effect.",
+            zh: "跳转到另一张地图。无音效。"
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            },
+            {
+                name: "exit",
+                description: "Byte - Exit # to warp to"
+            },
+            {
+                name: "X",
+                description: "Word - X coordinate"
+            },
+            {
+                name: "Y",
+                description: "Word - Y coordinate"
+            }
+        ]
+    },
+    "warpwalk": {
+        value: 0x3B,
+        description: {
+            en: "Warps the player to another map. Walking effect.",
+            zh: "跳转到另一张地图。走路效果。"
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            },
+            {
+                name: "exit",
+                description: "Byte - Exit # to warp to"
+            },
+            {
+                name: "X",
+                description: "Word - X coordinate"
+            },
+            {
+                name: "Y",
+                description: "Word - Y coordinate"
+            }
+        ]
+    },
+    "warphole": {
+        value: 0x3C,
+        description: {
+            en: "Warps the player to another map. Hole effect.",
+            zh: "跳转到另一张地图。洞穴效果。"
+        },
+        bytes: 3,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            }
+        ]
+    },
+    "warpteleport": {
+        value: 0x3D,
+        description: {
+            en: "Warps the player to another map. Teleport effect.",
+            zh: "跳转到另一张地图。传送效果。"
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            },
+            {
+                name: "exit",
+                description: "Byte - Exit # to warp to"
+            },
+            {
+                name: "X",
+                description: "Word - X coordinate"
+            },
+            {
+                name: "Y",
+                description: "Word - Y coordinate"
+            }
+        ]
+    },
+    "warp3": {
+        value: 0x3E,
+        description: {
+            en: "Warps the player to another map.",
+            zh: "跳转到另一张地图。"
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            },
+            {
+                name: "exit",
+                description: "Byte - Exit # to warp to"
+            },
+            {
+                name: "X",
+                description: "Word - X coordinate"
+            },
+            {
+                name: "Y",
+                description: "Word - Y coordinate"
+            }
+        ]
+    },
+    "setwarpplace": {
+        value: 0x3F,
+        description: {
+            en: "Sets the place a warp that lead to warp 127 of map 127.127 warps the player."
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            },
+            {
+                name: "exit",
+                description: "Byte - Exit # to warp to"
+            },
+            {
+                name: "X",
+                description: "Word - X coordinate"
+            },
+            {
+                name: "Y",
+                description: "Word - Y coordinate"
+            }
+        ]
+    },
+    "warp4": {
+        value: 0x40,
+        description: {
+            en: "Warps the player to another map.",
+            zh: "跳转到另一张地图。"
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            },
+            {
+                name: "exit",
+                description: "Byte - Exit # to warp to"
+            },
+            {
+                name: "X",
+                description: "Word - X coordinate"
+            },
+            {
+                name: "Y",
+                description: "Word - Y coordinate"
+            }
+        ]
+    },
+    "warp5": {
+        value: 0x41,
+        description: {
+            en: "Warps the player to another map.",
+            zh: "跳转到另一张地图。"
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "bank",
+                description: "Byte - Bank # to warp to"
+            },
+            {
+                name: "map",
+                description: "Byte - Map # to warp to"
+            },
+            {
+                name: "exit",
+                description: "Byte - Exit # to warp to"
+            },
+            {
+                name: "X",
+                description: "Word - X coordinate"
+            },
+            {
+                name: "Y",
+                description: "Word - Y coordinate"
+            }
+        ]
+    },
+    "getplayerpos": {
+        value: 0x42,
+        description: {
+            en: "Gets current position of the player on the map and stores it on specified variables.",
+            zh: "跳转到另一张地图。"
+        },
+        bytes: 8,
+        params: [
+            {
+                name: "variable X",
+                description: "Word - Variable to store X coordinate"
+            },
+            {
+                name: "variable Y",
+                description: "Word - Variable to store Y coordinate"
+            }
+        ]
+    },
+    "countpokemon": {
+        value: 0x43,
+        description: {
+            en: "Counts the number of Pokemon in your party and stores the result in LASTRESULT.",
+            zh: "统计队伍中宝可梦的数量，并将结果存储在 LASTRESULT 中。"
+        },
+        bytes: 1
+    },
     // 0x44: "additem",
     // 0x45: "removeitem",
     // 0x46: "checkitemroom",
@@ -1120,8 +1787,13 @@ const characters: WordData = {
 
 const all = Object.assign(keywords, characters);
 
+const rawTypes = {
+    list: ["byte", "b", "char", "word", "i", "int", "integer", "dword", "l", "long", "pointer", "p", "ptr"]
+};
+
 export {
     all,
     keywords,
-    characters
+    characters,
+    rawTypes
 };

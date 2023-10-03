@@ -60,7 +60,8 @@ export default class pm3genHoverProvider implements HoverProvider {
                     }).join("\n\n")}`;
                 }
                 else {
-                    str += "无参数要求。"
+                    str += `
+                    \n无参数要求。`
                 }
                 contents.push(str);
             }

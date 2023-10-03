@@ -9,10 +9,10 @@
 			"include": "#commands"
 		},
 		{
-			"include": "#dynamic"
+			"include": "#constant"
 		},
 		{
-			"include": "#enums"
+			"include": "#dynamic"
 		},
 		{
 			"include": "#comments"
@@ -34,13 +34,19 @@
 				"match": "\\b(end|return|call|goto|if1|if2|gotostd|callstd|gotostdif|callstdif|virtualgoto|virtualcall|virtualgotoif|virtualcallif|if|word)\\b"
 			}, {
 				"name": "keyword.control",
-				"match": "(#[a-z]+)\\b"
+				"match": "#[a-z]+\\b"
 			}]
 		},
 		"commands": {
 			"patterns": [{
 				"name": "constant.character",
 				"match": "\\b[a-z][0-9a-z]*\\b"
+			}]
+		},
+		"constant": {
+			"patterns": [{
+				"name": "variable.parameter",
+				"match": "\\b[A-Z_][A-Z0-9_]*\\b"
 			}]
 		},
 		"dynamic": {
@@ -51,12 +57,6 @@
 						"name": "support.function"
 					}
 				}
-			}]
-		},
-		"enums": {
-			"patterns": [{
-				"name": "variable.parameter",
-				"match": "\\b([A-Z_]+)\\b"
 			}]
 		},
 		"comments": {
