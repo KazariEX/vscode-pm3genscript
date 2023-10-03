@@ -9,17 +9,42 @@
   "categories": [
     "Programming Languages"
   ],
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
   "contributes": {
-    "languages": [{
-      "id": "pm3genscript",
-      "aliases": ["pm3genscript", "pm3genscript"],
-      "extensions": [".p3s"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "pm3genscript",
-      "scopeName": "source.p3s",
-      "path": "./syntaxes/pm3genscript.tmLanguage.json"
-    }]
+    "languages": [
+      {
+        "id": "pm3genscript",
+        "aliases": [
+          "pm3genscript",
+          "pm3genscript"
+        ],
+        "extensions": [
+          ".ptc"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "pm3genscript",
+        "scopeName": "source.pm3genscript",
+        "path": "./src/syntaxes/syntax.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "pm3genscript",
+        "path": "./src/snippets/snippets.json"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.1",
+    "@types/vscode": "^1.82.0"
   }
 }

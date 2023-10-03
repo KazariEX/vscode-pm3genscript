@@ -1,0 +1,102 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "pm3genscript",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#commands"
+		},
+		{
+			"include": "#dynamic"
+		},
+		{
+			"include": "#enums"
+		},
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#symbols"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control",
+				"match": "\\b(end|return|call|goto|if1|if2|gotostd|callstd|gotostdif|callstdif|virtualgoto|virtualcall|virtualgotoif|virtualcallif|if|word)\\b"
+			}, {
+				"name": "keyword.control",
+				"match": "(#[a-z]+)\\b"
+			}]
+		},
+		"commands": {
+			"patterns": [{
+				"name": "constant.character",
+				"match": "\\b[a-z][0-9a-z]*\\b"
+			}]
+		},
+		"dynamic": {
+			"patterns": [{
+				"match": "(@[\\w]*)",
+				"captures": {
+					"1": {
+						"name": "support.function"
+					}
+				}
+			}]
+		},
+		"enums": {
+			"patterns": [{
+				"name": "variable.parameter",
+				"match": "\\b([A-Z_]+)\\b"
+			}]
+		},
+		"comments": {
+			"patterns": [{
+				"name": "comment.line",
+				"match": "(//.*)"
+			}, {
+				"name": "comment.block",
+				"begin": "(/\\*)",
+				"end": "(\\*/)"
+			}]
+		},
+		"numbers": {
+			"patterns": [{
+				"name": "constant.numeric",
+				"match": "\\b0x([0-9A-Fa-f]+)\\b"
+			}, {
+				"name": "constant.numeric",
+				"match": "\\b([0-9]+)\\b"
+			}]
+		},
+		"strings": {
+			"patterns": [{
+				"name": "string.quoted.double",
+				"begin": "\"",
+				"end": "\"",
+				"patterns": [
+					{
+						"name": "constant.character.escape",
+						"match": "\\\\."
+					}
+				]
+			}]
+		},
+		"symbols": {
+			"patterns": [{
+				"name": "keyword.operator",
+				"match": "(=)"
+			}]
+		}
+	},
+	"scopeName": "source.pm3genscript"
+}
