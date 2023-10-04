@@ -4,7 +4,7 @@ import { tokenTypes } from "./lexer";
 class PTSParser extends CstParser {
     constructor()
     {
-        super(tokenTypes);
+        super(tokenTypes, { recoveryEnabled: true });
         this.performSelfAnalysis();
     }
 
@@ -20,9 +20,25 @@ class PTSParser extends CstParser {
     //编译器宏
     macro = this.RULE("Macro", () => {
         this.CONSUME(tokenTypes.macro);
-        this.MANY(() => {
-            this.SUBRULE(this.param);
-        });
+        this.MANY(() => this.SUBRULE(this.param));
+        this.OPTION(() => this.CONSUME(tokenTypes.pop_endline));
+    });
+
+    //RAW模式
+    raw = this.RULE("Raw", () => {
+        this.CONSUME(tokenTypes.raw);
+        this.MANY(() => this.OR([
+            { ALT: () => this.CONSUME(tokenTypes.symbol) },
+            { ALT: () => this.CONSUME(tokenTypes.literal) },
+            { ALT: () => this.CONSUME(tokenTypes.raw_type) }
+        ]));
+        this.OPTION(() => this.CONSUME(tokenTypes.pop_endline));
+    });
+
+    //文本模式
+    equal = this.RULE("Equal", () => {
+        this.CONSUME(tokenTypes.equal);
+        this.CONSUME(tokenTypes.string);
     });
 
     //指令
@@ -36,31 +52,11 @@ class PTSParser extends CstParser {
     //参数
     param = this.RULE("Param", () => {
         this.OR([
-            { ALT: () => this.CONSUME(tokenTypes.define) },
+            { ALT: () => this.CONSUME(tokenTypes.symbol) },
             { ALT: () => this.CONSUME(tokenTypes.dynamic) },
-            { ALT: () => this.CONSUME(tokenTypes.literal) }
-        ]);
-    });
-
-    //RAW模式
-    raw = this.RULE("Raw", () => {
-        this.CONSUME(tokenTypes.raw);
-        this.MANY(() => this.OR([
-            { ALT: () => this.CONSUME(tokenTypes.define) },
             { ALT: () => this.CONSUME(tokenTypes.literal) },
-            { ALT: () => this.CONSUME(tokenTypes.raw_type) }
-        ]));
-        this.OPTION(() => {
-            this.CONSUME(tokenTypes.raw_end);
-        });
-    });
-
-    //文本模式
-    equal = this.RULE("Equal", () => {
-        this.CONSUME(tokenTypes.equal);
-        this.OPTION(() => {
-            this.CONSUME(tokenTypes.string);
-        });
+            { ALT: () => this.CONSUME(tokenTypes.string) }
+        ]);
     });
 }
 

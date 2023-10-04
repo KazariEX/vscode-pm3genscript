@@ -2,7 +2,7 @@ import { DiagnosticSeverity } from "vscode-languageserver";
 import { CstChildrenDictionary, IToken, CstNode, ICstVisitor, CstNodeLocation } from "chevrotain";
 import { BasePTSVisitor } from "./parser";
 import { PTSError, PTSParam, PTSSyntax } from "./type";
-import { all, rawTypes } from "./data";
+import { macros, commands, rawTypes } from "./data";
 
 class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[], any> {
     constructor()
@@ -33,25 +33,33 @@ class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[], any> 
     Macro(ctx, errors: PTSError[]): PTSSyntax
     {
         const token = ctx.macro[0];
-        let cmd = token.image.substring(1);
+        let cmd: string = token.image;
+        if (cmd.startsWith("#")) {
+            cmd = cmd.substring(1);
+        }
         const location = getLocationFromToken(token);
         const params = [];
 
-        if (cmd in all) {
+        if (cmd in macros) {
             //重定向
-            const { redirect } = all[cmd];
-            if (redirect in all) {
+            const { redirect } = macros[cmd];
+            if (redirect in macros) {
                 cmd = redirect;
             }
 
-            const count = all[cmd].params?.length || 0;
-            for (let i = 0; i < count; i++) {
-                const p = this.visit(ctx.Param?.[i]);
-                if (p !== void(0)) {
-                    params.push(p);
-                }
-            }
-            checkParamsCount("#" + cmd, location, params, count, errors);
+            ctx.Param?.forEach((item: CstNode) => {
+                const p = this.visit(item);
+                params.push(p);
+            });
+            const count = macros[cmd].params?.length || 0;
+            checkParamsCount(token.image, location, params, count, errors);
+        }
+        else {
+            errors.push({
+                message: `未知的宏。`,
+                location,
+                serverity: DiagnosticSeverity.Error
+            });
         }
 
         return {
@@ -70,15 +78,20 @@ class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[], any> 
         const location = getLocationFromToken(token);
         const params = [];
 
-        if (cmd in all) {
-            const count = all[cmd].params?.length || 0;
-            for (let i = 0; i < count; i++) {
-                const p = this.visit(ctx.Param?.[i]);
-                if (p !== void(0)) {
-                    params.push(p);
-                }
-            }
+        if (cmd in commands) {
+            ctx.Param?.forEach((item: CstNode) => {
+                const p = this.visit(item);
+                params.push(p);
+            });
+            const count = commands[cmd].params?.length || 0;
             checkParamsCount(cmd, location, params, count, errors);
+        }
+        else {
+            errors.push({
+                message: `未知的指令。`,
+                location,
+                serverity: DiagnosticSeverity.Error
+            });
         }
 
         return {
@@ -93,9 +106,9 @@ class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[], any> 
     Param(ctx, errors: PTSError[]): PTSParam
     {
         for (const key of [
-            "constant",
             "dynamic",
             "literal",
+            "symbol",
             "string"
         ]) {
             if (key in ctx) {
@@ -118,7 +131,7 @@ class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[], any> 
         const params = [];
 
         //对所有参数进行排序
-        const sorted = propsToSortedArray(ctx, ["define", "literal", "raw-type"]);
+        const sorted = propsToSortedArray(ctx, ["literal", "symbol", "raw-type"]);
 
         //参数类型检查
         let lastType = "";
@@ -130,7 +143,7 @@ class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[], any> 
             if (tokenType === "raw-type") {
                 checkLastRawType(lastType, sorted[i - 1], errors);
 
-                if (rawTypes.list.includes(item.image)) {
+                if (rawTypes.includes(item.image)) {
                     lastType = item.image;
                 }
                 else {
@@ -203,14 +216,31 @@ function getLocationFromToken(token: IToken): CstNodeLocation
 }
 
 //检查参数数量
-function checkParamsCount(command: string, location: CstNodeLocation, params: Array<any>, count: number, errors: PTSError[])
+function checkParamsCount(command: string, location: CstNodeLocation, params: CstNode[], count: number, errors: PTSError[])
 {
     if (params.length < count) {
         errors.push({
-            message: `指令 ${command} 需要 ${count} 个参数，但只提供了 ${params.length} 个。`,
+            message: `指令 ${command} 需要 ${params.length} / ${count} 个参数。`,
             location,
             serverity: DiagnosticSeverity.Error
         });
+    }
+    else if (params.length > count) {
+        const start = params[count].location;
+        const end = params.at(-1).location;
+
+        errors.push({
+            message: "额外的参数。",
+            location: {
+                startOffset: start.startOffset,
+                startLine: start.startLine,
+                startColumn: start.startColumn,
+                endOffset: end.endOffset,
+                endLine: end.endLine,
+                endColumn: end.endColumn
+            },
+            serverity: DiagnosticSeverity.Error
+        })
     }
 }
 

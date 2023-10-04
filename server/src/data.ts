@@ -1,6 +1,6 @@
 type WordData = {
     [K in keyof any]: {
-        alias?: Array<string>,
+        alias?: string[],
         bytes?: number,
         description?: {
             [key in "en" | "zh"]?: string
@@ -12,25 +12,30 @@ type WordData = {
         hash?: Boolean,
         redirect?: string,
         params?: Array<{
-            name?: string,
+            name: string,
+            enum?: string[],
+            type?: string | string[],
             description?: string
         }>,
         value?: number,
     }
 };
 
-const keywords: WordData = {
+const rawTypes = ["byte", "b", "char", "word", "i", "int", "integer", "dword", "l", "long", "pointer", "p", "ptr"];
+
+const macros: WordData = {
     "alias": {
-        hash: true,
         description: {
             zh: `设置在编译脚本时使用的替换符号。`
         },
         params: [
             {
-                name: "symbol"
+                name: "symbol",
+                type: "command"
             },
             {
-                name: "alias"
+                name: "alias",
+                type: "command"
             }
         ],
         example: {
@@ -39,13 +44,13 @@ const keywords: WordData = {
         }
     },
     "autobank": {
-        hash: true,
         description: {
             en: `Turns on or off autobanking. When turned on, the extra 0x08/0x09 bank is automatically added to any pointer if the pointer doesn't have a bank already. By default autobanking is enabled. Anyway, #org is not affected by this directive.`
         },
         params: [
             {
-                name: "on | off"
+                name: "on | off",
+                enum: ["on", "off"]
             }
         ],
         example: {
@@ -54,17 +59,16 @@ const keywords: WordData = {
         }
     },
     "binary": {
-        hash: true,
         redirect: "raw"
     },
     "braille": {
-        hash: true,
         description: {
             zh: `使用盲文表转换文本并插入 ROM。请注意，盲文字母仅包含大写字母。`
         },
         params: [
             {
-                name: "text"
+                name: "text",
+                type: "string"
             }
         ],
         example: {
@@ -73,7 +77,6 @@ const keywords: WordData = {
         },
     },
     "break": {
-        hash: true,
         alias: ["stop"],
         description: {
             zh: `当编译器到达该指令时，它将停止处理脚本的剩余部分。在调试脚本时很有用。`
@@ -83,7 +86,6 @@ const keywords: WordData = {
         }
     },
     "clean": {
-        hash: true,
         description: {
             zh: `
             \n清除上次编译的脚本，只要它是动态的。
@@ -94,23 +96,18 @@ const keywords: WordData = {
         }
     },
     "const": {
-        hash: true,
         redirect: "define"
     },
     "constlist": {
-        hash: true,
         redirect: "definelist"
     },
     "deconst": {
-        hash: true,
         redirect: "undefine"
     },
     "deconstall": {
-        hash: true,
         redirect: "undefineall"
     },
     "define": {
-        hash: true,
         alias: ["const"],
         description: {
             zh: `
@@ -120,10 +117,12 @@ const keywords: WordData = {
         },
         params: [
             {
-                name: "symbol"
+                name: "symbol",
+                type: "define"
             },
             {
-                name: "value"
+                name: "value",
+                type: "literal"
             }
         ],
         example: {
@@ -132,7 +131,6 @@ const keywords: WordData = {
         }
     },
     "definelist": {
-        hash: true,
         alias: ["constlist"],
         description: {
             zh: `如果启用了编译器日志，则会显示编译期间使用 #define 定义的完整列表。`
@@ -142,13 +140,13 @@ const keywords: WordData = {
         }
     },
     "dynamic": {
-        hash: true,
         description: {
             zh: `设置动态偏移量的起始基准，编译器将从这里开始查找可用空间。`
         },
         params: [
             {
-                name: "offset"
+                name: "offset",
+                type: "pointer"
             }
         ],
         example: {
@@ -157,16 +155,17 @@ const keywords: WordData = {
         }
     },
     "erase": {
-        hash: true,
         description: {
             zh: `从指定的偏移量开始，使用可用空间字节值覆盖一定数量的字节。`
         },
         params: [
             {
-                name: "offset"
+                name: "offset",
+                type: "pointer"
             },
             {
-                name: "length"
+                name: "length",
+                type: "literal"
             }
         ],
         example: {
@@ -175,16 +174,17 @@ const keywords: WordData = {
         }
     },
     "eraserange": {
-        hash: true,
         description: {
             zh: `使用可用空间字节值覆盖指定范围的字节。`
         },
         params: [
             {
-                name: "start-offset"
+                name: "start-offset",
+                type: "pointer"
             },
             {
-                name: "end-offset"
+                name: "end-offset",
+                type: "pointer"
             }
         ],
         example: {
@@ -193,13 +193,13 @@ const keywords: WordData = {
         }
     },
     "freespace": {
-        hash: true,
         description: {
             zh: `设置可用空间字节值。默认值为 0xFF。`
         },
         params: [
             {
-                name: "0x00 | 0xFF"
+                name: "0x00 | 0xFF",
+                enum: ["0x00", "0xFF"]
             }
         ],
         example: {
@@ -207,13 +207,13 @@ const keywords: WordData = {
         }
     },
     "include": {
-        hash: true,
         description: {
             zh: `在编译过程中包含一个头文件。`
         },
         params: [
             {
-                name: "file"
+                name: "file",
+                type: "string"
             }
         ],
         example: {
@@ -222,7 +222,6 @@ const keywords: WordData = {
         }
     },
     "org": {
-        hash: true,
         alias: ["seek"],
         description: {
             zh: `
@@ -233,7 +232,8 @@ const keywords: WordData = {
         },
         params: [
             {
-                name: "offset"
+                name: "offset",
+                type: ["pointer", "dynamic"]
             }
         ],
         example: {
@@ -244,15 +244,13 @@ const keywords: WordData = {
         }
     },
     "put": {
-        hash: true,
         redirect: "raw"
     },
     "raw": {
-        hash: true,
         alias: ["binary", "put"],
         description: {
             zh: `
-            \n在ROM中直接插入原始数据。
+            \n在 ROM 中直接插入原始数据。
             \n要确定使用的数据类型，在后面的任何值前添加类型的名称即可。
             \n如果没有指定类型，插入的值将被视为字节。
             \n可能的数据类型包括：
@@ -263,10 +261,12 @@ const keywords: WordData = {
         },
         params: [
             {
-                name: "data-type"
+                name: "data-type",
+                enum: rawTypes
             },
             {
-                name: "value"
+                name: "value",
+                type: "literal"
             }
         ],
         example: {
@@ -275,21 +275,19 @@ const keywords: WordData = {
         }
     },
     "seek": {
-        hash: true,
         redirect: "org"
     },
     "stop": {
-        hash: true,
         redirect: "break"
     },
     "remove": {
-        hash: true,
         description: {
             zh: `删除已编译脚本的主要部分（如果有效），并使用可用空间字节值填充。`
         },
         params: [
             {
-                name: "offset"
+                name: "offset",
+                type: "pointer"
             }
         ],
         example: {
@@ -298,13 +296,13 @@ const keywords: WordData = {
         }
     },
     "removeall": {
-        hash: true,
         description: {
             zh: `删除已编译的脚本（如果有效），以及它的所有额外数据，如字符串、移动指令、商店数据或盲文等；并使用可用空间字节值填充。`
         },
         params: [
             {
-                name: "offset"
+                name: "offset",
+                type: "pointer"
             }
         ],
         example: {
@@ -313,13 +311,13 @@ const keywords: WordData = {
         }
     },
     "removemart": {
-        hash: true,
         description: {
             zh: `删除在指定偏移量处找到的商店数据。`
         },
         params: [
             {
-                name: "offset"
+                name: "offset",
+                type: "pointer"
             }
         ],
         example: {
@@ -328,13 +326,13 @@ const keywords: WordData = {
         }
     },
     "removemove": {
-        hash: true,
         description: {
             zh: `删除在指定偏移量处找到的移动指令。`
         },
         params: [
             {
-                name: "offset"
+                name: "offset",
+                type: "pointer"
             }
         ],
         example: {
@@ -343,13 +341,13 @@ const keywords: WordData = {
         }
     },
     "reserve": {
-        hash: true,
         description: {
             zh: `在脚本中使用 nop1 填充以保留指定长度的字节。`
         },
         params: [
             {
-                name: "value"
+                name: "length",
+                type: "literal"
             }
         ],
         example: {
@@ -363,13 +361,13 @@ const keywords: WordData = {
         }
     },
     "unalias": {
-        hash: true,
         description: {
             zh: `从别名列表中删除指定的别名。`
         },
         params: [
             {
-                name: "alias"
+                name: "alias",
+                type: "command"
             }
         ],
         example: {
@@ -378,7 +376,6 @@ const keywords: WordData = {
         }
     },
     "unaliasall": {
-        hash: true,
         description: {
             zh: `删除所有别名。`
         },
@@ -387,14 +384,14 @@ const keywords: WordData = {
         },
     },
     "undefine": {
-        hash: true,
         alias: ["deconst"],
         description: {
             zh: `从定义列表中删除指定的符号。`
         },
         params: [
             {
-                name: "symbol"
+                name: "symbol",
+                type: "define"
             }
         ],
         example: {
@@ -403,7 +400,6 @@ const keywords: WordData = {
         }
     },
     "undefineall": {
-        hash: true,
         alias: ["deconstall"],
         description: {
             zh: `删除所有定义的符号。`
@@ -412,6 +408,26 @@ const keywords: WordData = {
             value: "#undefineall"
         }
     },
+    "=": {
+        description: {
+            zh: `
+            \n原始文本插入器。
+            \n使用这个指令，可以将任何文本写入 ROM，文本会被 ROM 自动转换为正确的十六进制数据。`
+        },
+        params: [
+            {
+                name: "text",
+                type: "string"
+            }
+        ],
+        example: {
+            value: "= \"Hello world!\"",
+            description: "在将所有字符按照字符对照表转换完成后，字符串将被写入 ROM。"
+        }
+    }
+};
+
+const commands: WordData = {
     "if": {
         description: {
             zh: `
@@ -423,17 +439,36 @@ const keywords: WordData = {
         params: [
             {
                 name: "condition",
-                description: "Byte - Condition"
+                type: "byte",
+                description: "Condition"
             },
             {
                 name: "goto | call",
-                description: "Command - Command Type",
+                type: "command",
+                description: "Command Type",
             },
             {
                 name: "pointer",
-                description: "Pointer - Pointer to go to"
+                type: "pointer",
+                description: "Pointer to go to"
             }
         ]
+    },
+    "nop": {
+        value: 0x00,
+        description: {
+            en: `Does absolutely nothing.`,
+            zh: `什么都不做。`
+        },
+        bytes: 1
+    },
+    "nop1": {
+        value: 0x01,
+        description: {
+            en: `Does absolutely nothing.`,
+            zh: `什么都不做。`
+        },
+        bytes: 1
     },
     "end": {
         value: 0x02,
@@ -461,7 +496,8 @@ const keywords: WordData = {
         params: [
             {
                 name: "pointer",
-                description: "Pointer - Pointer to continue from"
+                type: "pointer",
+                description: "Pointer to continue from"
             }
         ]
     },
@@ -475,7 +511,8 @@ const keywords: WordData = {
         params: [
             {
                 name: "pointer",
-                description: "Pointer - Pointer to continue from"
+                type: "pointer",
+                description: "Pointer to continue from"
             }
         ]
     },
@@ -491,11 +528,13 @@ const keywords: WordData = {
         params: [
             {
                 name: "condition",
-                description: "Byte - Condition"
+                type: "byte",
+                description: "Condition"
             },
             {
                 name: "pointer",
-                description: "Pointer - Pointer to go to"
+                type: "pointer",
+                description: "Pointer to go to"
             }
         ]
     },
@@ -511,11 +550,13 @@ const keywords: WordData = {
         params: [
             {
                 name: "condition",
-                description: "Byte - Condition"
+                type: "byte",
+                description: "Condition"
             },
             {
                 name: "pointer",
-                description: "Pointer - Pointer to go to"
+                type: "pointer",
+                description: "Pointer to go to"
             }
         ]
     },
@@ -529,7 +570,8 @@ const keywords: WordData = {
         params: [
             {
                 name: "function",
-                description: "Byte - Function # to jump to"
+                type: "byte",
+                description: "Function # to jump to"
             }
         ]
     },
@@ -543,7 +585,8 @@ const keywords: WordData = {
         params: [
             {
                 name: "function",
-                description: "Byte - Function # to call"
+                type: "byte",
+                description: "Function # to call"
             }
         ]
     },
@@ -557,11 +600,13 @@ const keywords: WordData = {
         params: [
             {
                 name: "condition",
-                description: "Byte - Condition"
+                type: "byte",
+                description: "Condition"
             },
             {
                 name: "function",
-                description: "Byte - Function # to jump to"
+                type: "byte",
+                description: "Function # to jump to"
             }
         ],
     },
@@ -575,96 +620,15 @@ const keywords: WordData = {
         params: [
             {
                 name: "condition",
-                description: "Byte - Condition"
+                type: "byte",
+                description: "Condition"
             },
             {
                 name: "function",
-                description: "Byte - Function # to call"
+                type: "byte",
+                description: "Function # to call"
             }
         ]
-    },
-    "virtualgoto": {
-        value: 0xB9,
-        description: {
-            en: `Jumps to a custom function.`,
-            zh: `跳转到自定义函数。`
-        },
-        bytes: 5,
-        params: [
-            {
-                name: "pointer",
-                description: "Pointer - Pointer to custom function"
-            }
-        ]
-    },
-    "virtualcall": {
-        value: 0xBA,
-        description: {
-            en: `Calls a custom function.`,
-            zh: `调用自定义函数。`
-        },
-        bytes: 5,
-        params: [
-            {
-                name: "pointer",
-                description: "Pointer - Pointer to custom function"
-            }
-        ]
-    },
-    "virtualgotoif": {
-        value: 0xBB,
-        description: {
-            en: `Jumps to a custom function, conditional version.`,
-            zh: `跳转到自定义函数的条件版本。`
-        },
-        bytes: 6,
-        params: [
-            {
-                name: "condition",
-                description: "Byte - Condition"
-            },
-            {
-                name: "pointer",
-                description: "Pointer - Pointer to custom function"
-            }
-        ]
-    },
-    "virtualcallif": {
-        value: 0xBC,
-        description: {
-            en: `Calls a custom function, conditional version.`,
-            zh: `调用自定义函数的条件版本。`
-        },
-        bytes: 6,
-        params: [
-            {
-                name: "condition",
-                description: "Byte - Condition"
-            },
-            {
-                name: "pointer",
-                description: "Pointer - Pointer to custom function"
-            }
-        ]
-    }
-};
-
-const characters: WordData = {
-    "nop": {
-        value: 0x00,
-        description: {
-            en: `Does absolutely nothing.`,
-            zh: `什么都不做。`
-        },
-        bytes: 1
-    },
-    "nop1": {
-        value: 0x01,
-        description: {
-            en: `Does absolutely nothing.`,
-            zh: `什么都不做。`
-        },
-        bytes: 1
     },
     "jumpram": {
         value: 0x0C,
@@ -692,7 +656,8 @@ const characters: WordData = {
         params: [
             {
                 name: "value",
-                description: "Byte - Byte value to use"
+                type: "byte",
+                description: "Byte value to use"
             }
         ]
     },
@@ -706,11 +671,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Memory bank to use"
+                type: "byte",
+                description: "Memory bank to use"
             },
             {
                 name: "pointer",
-                description: "Pointer - Pointer to load into memory"
+                type: "pointer",
+                description: "Pointer to load into memory"
             }
         ]
     },
@@ -724,11 +691,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Memory bank to use"
+                type: "byte",
+                description: "Memory bank to use"
             },
             {
                 name: "value",
-                description: "Byte - Byte value to use"
+                type: "byte",
+                description: "Byte value to use"
             }
         ]
     },
@@ -742,11 +711,13 @@ const characters: WordData = {
         params: [
             {
                 name: "value",
-                description: "Byte - Byte value to write"
+                type: "byte",
+                description: "Byte value to write"
             },
             {
                 name: "pointer",
-                description: "Pointer - Location to write it to"
+                type: "pointer",
+                description: "Location to write it to"
             }
         ]
     },
@@ -760,11 +731,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Memory bank to use"
+                type: "byte",
+                description: "Memory bank to use"
             },
             {
                 name: "pointer",
-                description: "Pointer - Pointer to byte to load into memory"
+                type: "pointer",
+                description: "Pointer to byte to load into memory"
             }
         ]
     },
@@ -778,11 +751,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Memory bank to use"
+                type: "byte",
+                description: "Memory bank to use"
             },
             {
                 name: "pointer",
-                description: "Pointer - Pointer to write byte to"
+                type: "pointer",
+                description: "Pointer to write byte to"
             }
         ]
     },
@@ -796,11 +771,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank #1",
-                description: "Byte - Bank #1 - Destination"
+                type: "byte",
+                description: "Bank #1 - Destination"
             },
             {
                 name: "bank #2",
-                description: "Byte - Bank #2 - Source"
+                type: "byte",
+                description: "Bank #2 - Source"
             }
         ]
     },
@@ -814,11 +791,13 @@ const characters: WordData = {
         params: [
             {
                 name: "pointer A",
-                description: "Pointer - Destination byte location"
+                type: "pointer",
+                description: "Destination byte location"
             },
             {
                 name: "pointer B",
-                description: "Pointer - Source byte location"
+                type: "pointer",
+                description: "Source byte location"
             }
         ]
     },
@@ -832,11 +811,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable A",
-                description: "Word - Variable A"
+                type: "word",
+                description: "Variable A"
             },
             {
                 name: "value",
-                description: "Word - Value to set A to"
+                type: "word",
+                description: "Value to set A to"
             }
         ]
     },
@@ -850,11 +831,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable A",
-                description: "Word - Variable A"
+                type: "word",
+                description: "Variable A"
             },
             {
                 name: "value",
-                description: "Word - Value to add to A"
+                type: "word",
+                description: "Value to add to A"
             }
         ]
     },
@@ -868,11 +851,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable A",
-                description: "Word - Variable A"
+                type: "word",
+                description: "Variable A"
             },
             {
                 name: "value",
-                description: "Word - Value subtract from A"
+                type: "word",
+                description: "Value subtract from A"
             }
         ]
     },
@@ -886,11 +871,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable A",
-                description: "Word - Variable A - Destination"
+                type: "word",
+                description: "Variable A - Destination"
             },
             {
                 name: "variable B",
-                description: "Word - Variable B - Source"
+                type: "word",
+                description: "Variable B - Source"
             }
         ]
     },
@@ -904,11 +891,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable A",
-                description: "Word - Variable A - Destination"
+                type: "word",
+                description: "Variable A - Destination"
             },
             {
                 name: "variable B",
-                description: "Word - Variable B - Source"
+                type: "word",
+                description: "Variable B - Source"
             }
         ]
     },
@@ -922,11 +911,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank #1",
-                description: "Word - Bank #1"
+                type: "word",
+                description: "Bank #1"
             },
             {
                 name: "bank #2",
-                description: "Word - Bank #2"
+                type: "word",
+                description: "Bank #2"
             }
         ]
     },
@@ -940,11 +931,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank #"
+                type: "byte",
+                description: "Bank #"
             },
             {
                 name: "value",
-                description: "Byte - Byte value to compare variable to"
+                type: "byte",
+                description: "Byte value to compare variable to"
             }
         ]
     },
@@ -958,11 +951,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank #"
+                type: "byte",
+                description: "Bank #"
             },
             {
                 name: "pointer",
-                description: "Pointer - Pointer to a byte value to compare variable to"
+                type: "pointer",
+                description: "Pointer to a byte value to compare variable to"
             }
         ]
     },
@@ -976,11 +971,13 @@ const characters: WordData = {
         params: [
             {
                 name: "pointer",
-                description: "Pointer - Pointer to a byte value to compare variable to"
+                type: "pointer",
+                description: "Pointer to a byte value to compare variable to"
             },
             {
                 name: "bank",
-                description: "Byte - Bank #"
+                type: "byte",
+                description: "Bank #"
             }
         ]
     },
@@ -994,11 +991,13 @@ const characters: WordData = {
         params: [
             {
                 name: "pointer",
-                description: "Pointer - Pointer to a byte value to compare with"
+                type: "pointer",
+                description: "Pointer to a byte value to compare with"
             },
             {
                 name: "value",
-                description: "Byte - Byte value to compare with"
+                type: "byte",
+                description: "Byte value to compare with"
             }
         ]
     },
@@ -1012,11 +1011,13 @@ const characters: WordData = {
         params: [
             {
                 name: "pointer",
-                description: "Pointer - Pointer to a byte value to compare with"
+                type: "pointer",
+                description: "Pointer to a byte value to compare with"
             },
             {
                 name: "pointer",
-                description: "Pointer - Pointer to a byte value to compare with"
+                type: "pointer",
+                description: "Pointer to a byte value to compare with"
             }
         ]
     },
@@ -1030,11 +1031,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable A",
-                description: "Word - Variable A"
+                type: "word",
+                description: "Variable A"
             },
             {
                 name: "value",
-                description: "Word - Value to compare A to"
+                type: "word",
+                description: "Value to compare A to"
             }
         ]
     },
@@ -1048,11 +1051,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable A",
-                description: "Word - Variable A"
+                type: "word",
+                description: "Variable A"
             },
             {
                 name: "variable B",
-                description: "Word - Variable B"
+                type: "word",
+                description: "Variable B"
             }
         ]
     },
@@ -1066,7 +1071,8 @@ const characters: WordData = {
         params: [
             {
                 name: "pointer",
-                description: "Pointer - Address of custom ASM routine"
+                type: "pointer",
+                description: "Address of custom ASM routine"
             }
         ]
     },
@@ -1079,7 +1085,8 @@ const characters: WordData = {
         params: [
             {
                 name: "pointer",
-                description: "Pointer - ???"
+                type: "pointer",
+                description: "???"
             }
         ]
     },
@@ -1093,7 +1100,8 @@ const characters: WordData = {
         params: [
             {
                 name: "event",
-                description: "Word - Event # to call"
+                type: "word",
+                description: "Event # to call"
             }
         ]
     },
@@ -1107,11 +1115,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable",
-                description: "Word - Variable to store returned value in"
+                type: "word",
+                description: "Variable to store returned value in"
             },
             {
                 name: "event",
-                description: "Word - Special event to call"
+                type: "word",
+                description: "Special event to call"
             }
         ]
     },
@@ -1133,7 +1143,8 @@ const characters: WordData = {
         params: [
             {
                 name: "delay",
-                description: "Word - Delay"
+                type: "word",
+                description: "Delay"
             }
         ]
     },
@@ -1147,7 +1158,8 @@ const characters: WordData = {
         params: [
             {
                 name: "flag",
-                description: "Word - Flag #"
+                type: "word",
+                description: "Flag #"
             }
         ]
     },
@@ -1161,7 +1173,8 @@ const characters: WordData = {
         params: [
             {
                 name: "flag",
-                description: "Word - Flag #"
+                type: "word",
+                description: "Flag #"
             }
         ]
     },
@@ -1175,7 +1188,8 @@ const characters: WordData = {
         params: [
             {
                 name: "flag",
-                description: "Word - Flag #"
+                type: "word",
+                description: "Flag #"
             }
         ]
     },
@@ -1188,11 +1202,13 @@ const characters: WordData = {
         params: [
             {
                 name: "???",
-                description: "Word - ???"
+                type: "word",
+                description: "???"
             },
             {
                 name: "???",
-                description: "Word - ???"
+                type: "word",
+                description: "???"
             }
         ]
     },
@@ -1221,7 +1237,8 @@ const characters: WordData = {
         params: [
             {
                 name: "sound",
-                description: "Word - Sound #"
+                type: "word",
+                description: "Sound #"
             }
         ]
     },
@@ -1243,7 +1260,8 @@ const characters: WordData = {
         params: [
             {
                 name: "fanfare",
-                description: "Word - Sappy song # to play."
+                type: "word",
+                description: "Sappy song # to play"
             }
         ]
     },
@@ -1265,11 +1283,13 @@ const characters: WordData = {
         params: [
             {
                 name: "song",
-                description: "Word - Sappy song # to play"
+                type: "word",
+                description: "Sappy song # to play"
             },
             {
                 name: "???",
-                description: "Byte - ???"
+                type: "byte",
+                description: "???"
             }
         ]
     },
@@ -1283,7 +1303,8 @@ const characters: WordData = {
         params: [
             {
                 name: "song",
-                description: "Word - Sappy song # to play"
+                type: "word",
+                description: "Sappy song # to play"
             }
         ]
     },
@@ -1305,7 +1326,8 @@ const characters: WordData = {
         params: [
             {
                 name: "song",
-                description: "Word - Sappy song # to fade to"
+                type: "word",
+                description: "Sappy song # to fade to"
             }
         ]
     },
@@ -1319,7 +1341,8 @@ const characters: WordData = {
         params: [
             {
                 name: "speed",
-                description: "Byte - Fading speed"
+                type: "byte",
+                description: "Fading speed"
             }
         ]
     },
@@ -1333,7 +1356,8 @@ const characters: WordData = {
         params: [
             {
                 name: "speed",
-                description: "Byte - Fading speed"
+                type: "byte",
+                description: "Fading speed"
             }
         ]
     },
@@ -1347,23 +1371,28 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             },
             {
                 name: "exit",
-                description: "Byte - Exit # to warp to"
+                type: "byte",
+                description: "Exit # to warp to"
             },
             {
                 name: "X",
-                description: "Word - X coordinate"
+                type: "word",
+                description: "X coordinate"
             },
             {
                 name: "Y",
-                description: "Word - Y coordinate"
+                type: "word",
+                description: "Y coordinate"
             }
         ]
     },
@@ -1377,23 +1406,28 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             },
             {
                 name: "exit",
-                description: "Byte - Exit # to warp to"
+                type: "byte",
+                description: "Exit # to warp to"
             },
             {
                 name: "X",
-                description: "Word - X coordinate"
+                type: "word",
+                description: "X coordinate"
             },
             {
                 name: "Y",
-                description: "Word - Y coordinate"
+                type: "word",
+                description: "Y coordinate"
             }
         ]
     },
@@ -1407,23 +1441,28 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             },
             {
                 name: "exit",
-                description: "Byte - Exit # to warp to"
+                type: "byte",
+                description: "Exit # to warp to"
             },
             {
                 name: "X",
-                description: "Word - X coordinate"
+                type: "word",
+                description: "X coordinate"
             },
             {
                 name: "Y",
-                description: "Word - Y coordinate"
+                type: "word",
+                description: "Y coordinate"
             }
         ]
     },
@@ -1437,11 +1476,13 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             }
         ]
     },
@@ -1455,23 +1496,28 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             },
             {
                 name: "exit",
-                description: "Byte - Exit # to warp to"
+                type: "byte",
+                description: "Exit # to warp to"
             },
             {
                 name: "X",
-                description: "Word - X coordinate"
+                type: "word",
+                description: "X coordinate"
             },
             {
                 name: "Y",
-                description: "Word - Y coordinate"
+                type: "word",
+                description: "Y coordinate"
             }
         ]
     },
@@ -1485,23 +1531,28 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             },
             {
                 name: "exit",
-                description: "Byte - Exit # to warp to"
+                type: "byte",
+                description: "Exit # to warp to"
             },
             {
                 name: "X",
-                description: "Word - X coordinate"
+                type: "word",
+                description: "X coordinate"
             },
             {
                 name: "Y",
-                description: "Word - Y coordinate"
+                type: "word",
+                description: "Y coordinate"
             }
         ]
     },
@@ -1514,23 +1565,28 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             },
             {
                 name: "exit",
-                description: "Byte - Exit # to warp to"
+                type: "byte",
+                description: "Exit # to warp to"
             },
             {
                 name: "X",
-                description: "Word - X coordinate"
+                type: "word",
+                description: "X coordinate"
             },
             {
                 name: "Y",
-                description: "Word - Y coordinate"
+                type: "word",
+                description: "Y coordinate"
             }
         ]
     },
@@ -1544,23 +1600,28 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             },
             {
                 name: "exit",
-                description: "Byte - Exit # to warp to"
+                type: "byte",
+                description: "Exit # to warp to"
             },
             {
                 name: "X",
-                description: "Word - X coordinate"
+                type: "word",
+                description: "X coordinate"
             },
             {
                 name: "Y",
-                description: "Word - Y coordinate"
+                type: "word",
+                description: "Y coordinate"
             }
         ]
     },
@@ -1574,23 +1635,28 @@ const characters: WordData = {
         params: [
             {
                 name: "bank",
-                description: "Byte - Bank # to warp to"
+                type: "byte",
+                description: "Bank # to warp to"
             },
             {
                 name: "map",
-                description: "Byte - Map # to warp to"
+                type: "byte",
+                description: "Map # to warp to"
             },
             {
                 name: "exit",
-                description: "Byte - Exit # to warp to"
+                type: "byte",
+                description: "Exit # to warp to"
             },
             {
                 name: "X",
-                description: "Word - X coordinate"
+                type: "word",
+                description: "X coordinate"
             },
             {
                 name: "Y",
-                description: "Word - Y coordinate"
+                type: "word",
+                description: "Y coordinate"
             }
         ]
     },
@@ -1604,11 +1670,13 @@ const characters: WordData = {
         params: [
             {
                 name: "variable X",
-                description: "Word - Variable to store X coordinate"
+                type: "word",
+                description: "Variable to store X coordinate"
             },
             {
                 name: "variable Y",
-                description: "Word - Variable to store Y coordinate"
+                type: "word",
+                description: "Variable to store Y coordinate"
             }
         ]
     },
@@ -1737,6 +1805,76 @@ const characters: WordData = {
     // 0xB6: "setwildbattle",
     // 0xB7: "dowildbattle",
     // 0xB8: "setvirtualaddress",
+    "virtualgoto": {
+        value: 0xB9,
+        description: {
+            en: `Jumps to a custom function.`,
+            zh: `跳转到自定义函数。`
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "pointer",
+                type: "pointer",
+                description: "Pointer to custom function"
+            }
+        ]
+    },
+    "virtualcall": {
+        value: 0xBA,
+        description: {
+            en: `Calls a custom function.`,
+            zh: `调用自定义函数。`
+        },
+        bytes: 5,
+        params: [
+            {
+                name: "pointer",
+                type: "pointer",
+                description: "Pointer to custom function"
+            }
+        ]
+    },
+    "virtualgotoif": {
+        value: 0xBB,
+        description: {
+            en: `Jumps to a custom function, conditional version.`,
+            zh: `跳转到自定义函数的条件版本。`
+        },
+        bytes: 6,
+        params: [
+            {
+                name: "condition",
+                type: "byte",
+                description: "Condition"
+            },
+            {
+                name: "pointer",
+                type: "pointer",
+                description: "Pointer to custom function"
+            }
+        ]
+    },
+    "virtualcallif": {
+        value: 0xBC,
+        description: {
+            en: `Calls a custom function, conditional version.`,
+            zh: `调用自定义函数的条件版本。`
+        },
+        bytes: 6,
+        params: [
+            {
+                name: "condition",
+                type: "byte",
+                description: "Condition"
+            },
+            {
+                name: "pointer",
+                type: "pointer",
+                description: "Pointer to custom function"
+            }
+        ]
+    },
     // 0xBD: "virtualmsgbox",
     // 0xBE: "virtualloadpointer",
     // 0xBF: "virtualbuffer",
@@ -1785,15 +1923,14 @@ const characters: WordData = {
     // "registernav": "registernav"
 }
 
-const all = Object.assign(keywords, characters);
-
-const rawTypes = {
-    list: ["byte", "b", "char", "word", "i", "int", "integer", "dword", "l", "long", "pointer", "p", "ptr"]
+const all = {
+    ...macros,
+    ...commands
 };
 
 export {
     all,
-    keywords,
-    characters,
+    macros,
+    commands,
     rawTypes
 };

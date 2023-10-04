@@ -18,11 +18,5 @@ export interface PTSSyntax {
 export interface PTSError {
     message: string,
     location: CstNodeLocation,
-    serverity: DiagnosticSeverity,
-    relatedInfomation?: PTSErrorRelatedInfomation[]
-}
-
-export interface PTSErrorRelatedInfomation {
-    message: string,
-    location: CstNodeLocation
+    serverity: DiagnosticSeverity
 }

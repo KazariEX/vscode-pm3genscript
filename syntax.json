@@ -9,7 +9,7 @@
 			"include": "#commands"
 		},
 		{
-			"include": "#constant"
+			"include": "#symbols"
 		},
 		{
 			"include": "#dynamic"
@@ -24,14 +24,14 @@
 			"include": "#strings"
 		},
 		{
-			"include": "#symbols"
+			"include": "#operators"
 		}
 	],
 	"repository": {
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control",
-				"match": "\\b(end|return|call|goto|if1|if2|gotostd|callstd|gotostdif|callstdif|virtualgoto|virtualcall|virtualgotoif|virtualcallif|if|word)\\b"
+				"match": "\\b(end|return|call|goto|if1|if2|gotostd|callstd|gotostdif|callstdif|virtualgoto|virtualcall|virtualgotoif|virtualcallif|if)\\b"
 			}, {
 				"name": "keyword.control",
 				"match": "#[a-z]+\\b"
@@ -40,10 +40,10 @@
 		"commands": {
 			"patterns": [{
 				"name": "constant.character",
-				"match": "\\b[a-z][0-9a-z]*\\b"
+				"match": "\\b[a-z][0-9a-z_]*\\b"
 			}]
 		},
-		"constant": {
+		"symbols": {
 			"patterns": [{
 				"name": "variable.parameter",
 				"match": "\\b[A-Z_][A-Z0-9_]*\\b"
@@ -51,12 +51,8 @@
 		},
 		"dynamic": {
 			"patterns": [{
-				"match": "(@[\\w]*)",
-				"captures": {
-					"1": {
-						"name": "support.function"
-					}
-				}
+				"name": "support.function",
+				"match": "@[\\w]*\\b"
 			}]
 		},
 		"comments": {
@@ -91,7 +87,7 @@
 				]
 			}]
 		},
-		"symbols": {
+		"operators": {
 			"patterns": [{
 				"name": "keyword.operator",
 				"match": "(=)"

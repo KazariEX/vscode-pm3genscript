@@ -1,13 +1,14 @@
 import { CancellationToken, Position, ProviderResult, SignatureHelp, SignatureInformation, SignatureHelpContext, SignatureHelpProvider, TextDocument, MarkdownString } from "vscode";
-import { all } from "../data";
+import { all, macros } from "../data";
+import { capitalizeFirstLetter } from "../utils";
 
 export default class pm3genSignatureHelpProvider implements SignatureHelpProvider {
     provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelp> | null {
-        //整行文本
-        const text = document.lineAt(position.line).text;
-
         //光标位置
         const char = position.character;
+
+        //整行文本
+        const text = document.lineAt(position.line).text;
 
         //单词尾位
         let c = 0;
@@ -15,14 +16,14 @@ export default class pm3genSignatureHelpProvider implements SignatureHelpProvide
         //高亮参数序号
         let p = -1;
 
-        const match = text.match(/((?:\*\/|^)\s*([#0-9a-z]+))(\s+.*)/);
+        const match = text.match(/((?:\*\/|^)\s*([#0-9a-z=]+))(\s+.*)/);
         const fullKey = match?.[2];
 
         let key = fullKey;
         if (key.startsWith("#")) {
             key = key.substring(1);
         }
-        else if (all[key]?.hash === true) {
+        else if (key in macros && key !== "=") {
             return null;
         }
 
@@ -49,9 +50,17 @@ export default class pm3genSignatureHelpProvider implements SignatureHelpProvide
         }).join(" "), new MarkdownString(all[key].description.zh?.trim()));
 
         signatureInfo.parameters.push(...all[key].params.map((item) => {
+            let type = "";
+            if (typeof item.type === "string") {
+                type = capitalizeFirstLetter(item.type);
+            }
+            else {
+                type = item.type.map((i) => capitalizeFirstLetter(i)).join(" | ");
+            }
+
             return {
                 label: item.name,
-                documentation: item.description
+                documentation: item.description ? `${type} - ${item.description}` : `类型：${type}`
             };
         }));
 

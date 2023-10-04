@@ -33,8 +33,8 @@ export function check(content: TextDocument): lsp.Diagnostic[]
     const parseResult = ptsParser.all();
     if (ptsParser.errors.length > 0) {
         errors.push(...ptsParser.errors.map((e) => ({
-            serverity: lsp.DiagnosticSeverity.Error,
             message: e.message,
+            serverity: lsp.DiagnosticSeverity.Error,
             range: e.token.tokenType === EOF ? {
                 start: content.positionAt(text.length),
                 end: content.positionAt(text.length)
@@ -60,8 +60,8 @@ export function check(content: TextDocument): lsp.Diagnostic[]
 function errorTransformer(e: PTSError, uri: string): lsp.Diagnostic
 {
     return {
-        severity: e.serverity,
         message: e.message,
+        severity: e.serverity,
         range: {
             start: {
                 line: e.location.startLine - 1,
@@ -71,22 +71,6 @@ function errorTransformer(e: PTSError, uri: string): lsp.Diagnostic
                 line: e.location.endLine - 1,
                 character: e.location.endColumn
             }
-        },
-        relatedInformation: e.relatedInfomation?.map((info) => ({
-            message: info.message,
-            location: {
-                uri,
-                range: {
-                    start: {
-                        line: e.location.startLine - 1,
-                        character: e.location.startColumn - 1
-                    },
-                    end: {
-                        line: e.location.endLine - 1,
-                        character: e.location.endColumn
-                    }
-                }
-            }
-        }))
+        }
     };
 }

@@ -1,6 +1,6 @@
 {
-  "name": "pm3gen-script-syntax",
-  "displayName": "pm3gen-script-syntax",
+  "name": "vscode-pm3genscript",
+  "displayName": "Pokemon Third Generation Script",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -16,12 +16,28 @@
     "watch": "tsc -b -w"
   },
   "contributes": {
+    "commands": [
+      {
+        "command": "pm3genscript.compile",
+        "category": "pm3genscript",
+        "title": "编译"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == pm3genscript",
+          "command": "pm3genscript.compile",
+          "group": "pm3genscript",
+          "title": "编译"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "pm3genscript",
         "aliases": [
-          "Pokemon Third Generation Script",
-          "pm3genscript"
+          "Pokemon 3rd Generation Script"
         ],
         "extensions": [
           ".pts"

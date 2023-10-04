@@ -4,6 +4,9 @@
 		"compile": "tsc -b",
 		"test": "npm run compile && nodemon test/index.mjs"
 	},
+	"nodemonConfig": {
+		"ignore": ["./out/*"]
+	},
 	"dependencies": {
 		"chevrotain": "^10.1.2",
 		"vscode-languageserver": "^9.0.1",

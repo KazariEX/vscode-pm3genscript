@@ -2,10 +2,13 @@ import * as lsp from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { DiagnosticSeverity, TextDocumentSyncKind } from "vscode-languageserver";
 import { check } from "./check";
+import { compile } from "./compile";
 
+//创建连接
 const connection = lsp.createConnection();
 const documents = new lsp.TextDocuments(TextDocument);
 
+//初始化时
 connection.onInitialize(() => {
 	return {
 		capabilities: {
@@ -14,30 +17,33 @@ connection.onInitialize(() => {
 	};
 });
 
+//初始化完成时
 connection.onInitialized(() => {
 	connection.client.register(lsp.DidChangeConfigurationNotification.type, void(0));
 });
 
+//配置项变更时
 connection.onDidChangeConfiguration(() => {
 	documents.all().forEach(validateTextDocument);
 });
 
+//内容变更时
 documents.onDidChangeContent((change) => {
 	validateTextDocument(change.document);
 });
 
+//建立连接
 documents.listen(connection);
-
 connection.listen();
 
+//语法检验与报错
 async function validateTextDocument(textDocument: TextDocument)
 {
-	const level = (await getSetting(textDocument.uri))?.diagnosticLevel || "info";
+	const level = (await getConfiguration(textDocument.uri))?.diagnosticLevel || "info";
 	const errors = check(textDocument).filter((e) => {
-		if (level === "warn") {
-			return e.severity !== DiagnosticSeverity.Information;
-		} else if (level === "error") {
-			return e.severity !== DiagnosticSeverity.Information && e.severity !== DiagnosticSeverity.Warning;
+		switch (level) {
+			case "warn": return e.severity !== DiagnosticSeverity.Information;
+			case "error": return e.severity !== DiagnosticSeverity.Information && e.severity !== DiagnosticSeverity.Warning;
 		}
 		return true;
 	});
@@ -47,7 +53,16 @@ async function validateTextDocument(textDocument: TextDocument)
 	});
 }
 
-async function getSetting(uri: string)
+//编译
+connection.onRequest("compile", ({
+	content
+} = {}) => {
+	const result = compile(content);
+	return result;
+});
+
+//获取配置项
+async function getConfiguration(uri: string)
 {
 	return await connection.workspace.getConfiguration({
 		scopeUri: uri,

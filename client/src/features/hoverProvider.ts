@@ -1,70 +1,74 @@
 import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode";
-import { all } from "../data";
+import { commands, macros } from "../data";
+import { capitalizeFirstLetter } from "../utils";
 
 export default class pm3genHoverProvider implements HoverProvider {
     provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover> {
         let word = document.getText(document.getWordRangeAtPosition(position));
 
         const contents = [];
-        if (word in all) {
-            const { redirect } = all[word];
 
+        if (word in macros) {
             //重定向
+            const { redirect } = macros[word];
             if (redirect) {
                 word = redirect;
             }
 
             //数据对象
-            const entity = all[word];
+            const entity = macros[word];
 
             //标题
-            let prefix = "",
-                suffix = "";
-            if (entity.value !== void(0)) {
+            const { alias } = entity;
+            if (alias?.length > 0) {
+                contents.push(`**#${word}** (alias:${alias.map((item) => ` #${item}`).join(",")})`);
+            }
+
+            //功能
+            contents.push(entity.description.en, entity.description.zh);
+            
+            //参数
+            const syntax = `
+            \n语法：
+            \n#${word} ${entity.params?.map((item) => {
+                return `[${item.name}]`;
+            }).join(" ")}`;
+
+            const example = `
+            \n用例：
+            \n${entity.example.value}
+            \n${entity.example.description}`;
+
+            contents.push(syntax, example);
+        }
+        else if (word in commands) {
+            //数据对象
+            const entity = commands[word];
+
+            //标题
+            let prefix = "";
+            if (Reflect.has(entity, "value")) {
                 prefix = `0x${entity.value.toString(16).toUpperCase().padStart(2, "0")} - `;
             }
-            else if (entity.hash === true) {
-                word = "#" + word;
-                const { alias } = entity;
-                if (alias?.length > 0) {
-                    suffix = ` (alias:${alias.map((item) => ` #${item}`).join(",")})`;
-                }
-            }
-            contents.push(`${prefix}**${word}**${suffix}`);
+            contents.push(`${prefix}**${word}**`);
 
             //功能
             contents.push(entity.description.en, entity.description.zh);
 
             //参数
-            if (entity.hash === true) {
-                const syntax = `
-                \n语法：
-                \n${word} ${entity.params?.map((item) => {
-                    return `[${item.name}]`;
-                }).join(" ")}`;
-
-                const example = `
-                \n用例：
-                \n${entity.example.value}
-                \n${entity.example.description}`;
-
-                contents.push(syntax, example);
+            let str = `所需字节：${entity.bytes}`;
+            if (entity.params?.length > 0) {
+                str += `
+                \n参数：
+                \n${entity.params.map((item) => {
+                    return `?? ${capitalizeFirstLetter(item.type as string)} - ${item.description}`;
+                }).join("\n\n")}`;
             }
             else {
-                let str = `所需字节：${entity.bytes}`;
-                if (entity.params?.length > 0) {
-                    str += `
-                    \n参数：
-                    \n${entity.params?.map((item) => {
-                        return `?? ${item.description}`;
-                    }).join("\n\n")}`;
-                }
-                else {
-                    str += `
-                    \n无参数要求。`
-                }
-                contents.push(str);
+                str += `
+                \n无参数要求。`
             }
+            contents.push(str);
         }
 
         return {
