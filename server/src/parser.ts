@@ -12,8 +12,7 @@ class PTSParser extends CstParser {
         this.MANY(() => this.OR([
             { ALT: () => this.SUBRULE(this.macro) },
             { ALT: () => this.SUBRULE(this.command) },
-            { ALT: () => this.SUBRULE(this.raw) },
-            { ALT: () => this.SUBRULE(this.equal) },
+            { ALT: () => this.SUBRULE(this.raw) }
         ]));
     });
 
@@ -33,12 +32,6 @@ class PTSParser extends CstParser {
             { ALT: () => this.CONSUME(tokenTypes.raw_type) }
         ]));
         this.OPTION(() => this.CONSUME(tokenTypes.pop_endline));
-    });
-
-    //文本模式
-    equal = this.RULE("Equal", () => {
-        this.CONSUME(tokenTypes.equal);
-        this.CONSUME(tokenTypes.string);
     });
 
     //指令

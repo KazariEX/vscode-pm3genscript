@@ -1,45 +1,7 @@
-#org 0xA00000
-applymovement MOVE_PLAYER 0x8AFEB23
-waitmovement 0x0
-movesprite 0x1 0x3E 0x17
-setdooropened 0x3E 0x17
-doorchange
-applymovement 0x1 0x8AFEB1F
-waitmovement 0x0
-setdoorclosed 0x3E 0x17
-doorchange
-msgbox 0x8AFEA55 MSG_NORMAL
-applymovement 0x1 0x8AFEB1B
-waitmovement 0x0
-msgbox 0x8AFEA36 MSG_NORMAL
-fanfare 0x0
-applymovement 0x1 0x8AFEB1B
-waitmovement 0x0
-applymovement 0x1 0x8AFEB1B
-waitmovement 0x0
+#dynamic 0xA05000
+
+#org @1
 setvar 0x4050 0x1
 setflag 0x208C
 clearflag 0x2050
 end
-
-#org 0xAFEA55
-= "??\h3B?\h64\h0AW\h3B?[PO]?[ME]???4???y?\hA0?\h92\h3B\n?\h42?\h70?4?N???r?r???)?\h0A?\h9B?\h6C?\h2F\h37\l?\h8C?\h7E?\h9E?X?\h83?8?\h4D?,?4\h37\l?\h67?I?c??\h3B?\h98?c???x?[A]?e\l???\h38?J?[m]?4?)\h0A\h6C\h37"
-
-#org 0xAFEA36
-= ""
-
-#org 0xAFEB23
-#raw 0x42
-#raw 0x1
-#raw 0x56
-#raw 0xFE
-
-#org 0xAFEB1F
-#raw 0x4
-#raw 0x56
-#raw 0xFE
-
-#org 0xAFEB1B
-#raw 0x55
-#raw 0x0
-#raw 0xFE

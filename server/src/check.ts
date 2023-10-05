@@ -4,7 +4,6 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { ptsLexer } from "./lexer";
 import { ptsParser } from "./parser";
 import { toAST } from "./ast";
-import { PTSError } from "./type";
 
 export function check(content: TextDocument): lsp.Diagnostic[]
 {
@@ -52,12 +51,12 @@ export function check(content: TextDocument): lsp.Diagnostic[]
     }
 
     const astResult = toAST(parseResult);
-    errors.push(...astResult.errors.map((e) => errorTransformer(e, content.uri)));
+    errors.push(...astResult.errors.map((e) => errorTransformer(e)));
 
     return errors;
 }
 
-function errorTransformer(e: PTSError, uri: string): lsp.Diagnostic
+function errorTransformer(e: PTSError): lsp.Diagnostic
 {
     return {
         message: e.message,

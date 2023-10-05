@@ -9,6 +9,7 @@ import {
 import pm3genHoverProvider from "./features/hoverProvider";
 import pm3genSignatureHelpProvider from "./features/signatureHelpProvider";
 import { macros, commands } from "./data";
+import { arrayToHexString } from "./utils";
 
 //语言ID
 const languageId = "pm3genscript";
@@ -42,6 +43,9 @@ export function activate(context: vscode.ExtensionContext)
 
     client.start();
 
+    //输出频道
+    const outputChannel = vscode.window.createOutputChannel("PM3GenScript",)
+
     //命令：编译
     const command1 = vscode.commands.registerCommand(`${languageId}.compile`, async () => {
         const { document } = vscode.window.activeTextEditor;
@@ -52,17 +56,22 @@ export function activate(context: vscode.ExtensionContext)
         }
 
         const content = document.getText();
-        const gekka: any = await client.sendRequest("compile", {
+        const res: any = await client.sendRequest("compile", {
             content
         });
 
-        if (gekka.errors.length > 0) {
-            const channel = vscode.window.createOutputChannel("compile", languageId);
-            channel.appendLine("!23");
-            channel.show();
+        if (res.error) {
+            vscode.window.showErrorMessage("编译失败，请检查脚本！");
         }
         else {
-            vscode.window.showErrorMessage("编译失败，请检查脚本！");
+            vscode.window.showInformationMessage("编译成功！");
+            outputChannel.clear();
+            outputChannel.show();
+            res.blocks.forEach((block) => {
+                const title = block.dynamicName ?? block.offset;
+                outputChannel.appendLine(`${title} [${block.bytes}]`);
+                outputChannel.appendLine(arrayToHexString(block.data.flat(1)));
+            });
         }
     });
 

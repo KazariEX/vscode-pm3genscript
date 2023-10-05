@@ -1,4 +1,4 @@
-type WordData = {
+export type WordData = {
     [K in keyof any]: {
         alias?: string[],
         bytes?: number,
@@ -9,13 +9,17 @@ type WordData = {
             value: string,
             description?: string
         },
-        hash?: Boolean,
+        hoisting?: Boolean,
         redirect?: string,
         params?: Array<{
             name: string,
-            enum?: string[],
+            enum?: any[],
             type?: string | string[],
-            description?: string
+            description?: string,
+            can?: {
+                dynamic?: boolean,
+                symbol?: boolean
+            }
         }>,
         value?: number,
     }
@@ -28,6 +32,7 @@ const macros: WordData = {
         description: {
             zh: `设置在编译脚本时使用的替换符号。`
         },
+        hoisting: true,
         params: [
             {
                 name: "symbol",
@@ -47,6 +52,7 @@ const macros: WordData = {
         description: {
             en: `Turns on or off autobanking. When turned on, the extra 0x08/0x09 bank is automatically added to any pointer if the pointer doesn't have a bank already. By default autobanking is enabled. Anyway, #org is not affected by this directive.`
         },
+        hoisting: true,
         params: [
             {
                 name: "on | off",
@@ -72,7 +78,7 @@ const macros: WordData = {
             }
         ],
         example: {
-            value: "#braille ABC",
+            value: "#braille \"ABC\"",
             description: `字符串 "ABC" 将在被转换为盲文后写入 ROM。`
         },
     },
@@ -91,6 +97,7 @@ const macros: WordData = {
             \n清除上次编译的脚本，只要它是动态的。
             \n相当于 #removeall。`
         },
+        hoisting: true,
         example: {
             value: "#clean"
         }
@@ -112,17 +119,20 @@ const macros: WordData = {
         description: {
             zh: `
             \n允许我们在编译脚本时定义可以替换数字的符号。
-            \n只允许使用数字，但它们可以是从字节到双字的任何大小。
-            \n最好只使用大写字母作为符号名称。`
+            \n必须使用大写字母或下划线作为符号名称，替换的数字可以是从字节到双字的任何大小。`
         },
+        hoisting: true,
         params: [
             {
                 name: "symbol",
-                type: "define"
+                type: "symbol"
             },
             {
                 name: "value",
-                type: "literal"
+                type: ["byte", "word", "dword"],
+                can: {
+                    symbol: false
+                }
             }
         ],
         example: {
@@ -135,6 +145,7 @@ const macros: WordData = {
         description: {
             zh: `如果启用了编译器日志，则会显示编译期间使用 #define 定义的完整列表。`
         },
+        hoisting: true,
         example: {
             value: "#definelist"
         }
@@ -143,10 +154,14 @@ const macros: WordData = {
         description: {
             zh: `设置动态偏移量的起始基准，编译器将从这里开始查找可用空间。`
         },
+        hoisting: true,
         params: [
             {
                 name: "offset",
-                type: "pointer"
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
             }
         ],
         example: {
@@ -158,10 +173,14 @@ const macros: WordData = {
         description: {
             zh: `从指定的偏移量开始，使用可用空间字节值覆盖一定数量的字节。`
         },
+        hoisting: true,
         params: [
             {
                 name: "offset",
-                type: "pointer"
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
             },
             {
                 name: "length",
@@ -177,14 +196,21 @@ const macros: WordData = {
         description: {
             zh: `使用可用空间字节值覆盖指定范围的字节。`
         },
+        hoisting: true,
         params: [
             {
                 name: "start-offset",
-                type: "pointer"
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
             },
             {
                 name: "end-offset",
-                type: "pointer"
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
             }
         ],
         example: {
@@ -196,10 +222,11 @@ const macros: WordData = {
         description: {
             zh: `设置可用空间字节值。默认值为 0xFF。`
         },
+        hoisting: true,
         params: [
             {
                 name: "0x00 | 0xFF",
-                enum: ["0x00", "0xFF"]
+                type: "byte"
             }
         ],
         example: {
@@ -210,6 +237,7 @@ const macros: WordData = {
         description: {
             zh: `在编译过程中包含一个头文件。`
         },
+        hoisting: true,
         params: [
             {
                 name: "file",
@@ -233,7 +261,7 @@ const macros: WordData = {
         params: [
             {
                 name: "offset",
-                type: ["pointer", "dynamic"]
+                type: "pointer"
             }
         ],
         example: {
@@ -266,7 +294,7 @@ const macros: WordData = {
             },
             {
                 name: "value",
-                type: "literal"
+                type: ["byte", "word", "dword", "pointer"]
             }
         ],
         example: {
@@ -284,10 +312,14 @@ const macros: WordData = {
         description: {
             zh: `删除已编译脚本的主要部分（如果有效），并使用可用空间字节值填充。`
         },
+        hoisting: true,
         params: [
             {
                 name: "offset",
-                type: "pointer"
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
             }
         ],
         example: {
@@ -299,10 +331,14 @@ const macros: WordData = {
         description: {
             zh: `删除已编译的脚本（如果有效），以及它的所有额外数据，如字符串、移动指令、商店数据或盲文等；并使用可用空间字节值填充。`
         },
+        hoisting: true,
         params: [
             {
                 name: "offset",
-                type: "pointer"
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
             }
         ],
         example: {
@@ -314,10 +350,14 @@ const macros: WordData = {
         description: {
             zh: `删除在指定偏移量处找到的商店数据。`
         },
+        hoisting: true,
         params: [
             {
                 name: "offset",
-                type: "pointer"
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
             }
         ],
         example: {
@@ -329,10 +369,14 @@ const macros: WordData = {
         description: {
             zh: `删除在指定偏移量处找到的移动指令。`
         },
+        hoisting: true,
         params: [
             {
                 name: "offset",
-                type: "pointer"
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
             }
         ],
         example: {
@@ -364,6 +408,7 @@ const macros: WordData = {
         description: {
             zh: `从别名列表中删除指定的别名。`
         },
+        hoisting: true,
         params: [
             {
                 name: "alias",
@@ -379,6 +424,7 @@ const macros: WordData = {
         description: {
             zh: `删除所有别名。`
         },
+        hoisting: true,
         example: {
             value: "#unaliasall"
         },
@@ -388,10 +434,11 @@ const macros: WordData = {
         description: {
             zh: `从定义列表中删除指定的符号。`
         },
+        hoisting: true,
         params: [
             {
                 name: "symbol",
-                type: "define"
+                type: "symbol"
             }
         ],
         example: {
@@ -404,6 +451,7 @@ const macros: WordData = {
         description: {
             zh: `删除所有定义的符号。`
         },
+        hoisting: true,
         example: {
             value: "#undefineall"
         }

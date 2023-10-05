@@ -39,26 +39,32 @@ connection.listen();
 //语法检验与报错
 async function validateTextDocument(textDocument: TextDocument)
 {
-	const level = (await getConfiguration(textDocument.uri))?.diagnosticLevel || "info";
-	const errors = check(textDocument).filter((e) => {
-		switch (level) {
-			case "warn": return e.severity !== DiagnosticSeverity.Information;
-			case "error": return e.severity !== DiagnosticSeverity.Information && e.severity !== DiagnosticSeverity.Warning;
-		}
-		return true;
-	});
-	connection.sendDiagnostics({
-		uri: textDocument.uri,
-		diagnostics: errors
-	});
+    const level = (await getConfiguration(textDocument.uri))?.diagnosticLevel || "info";
+    const errors = check(textDocument).filter((e) => {
+        switch (level) {
+            case "warn": return e.severity !== DiagnosticSeverity.Information;
+            case "error": return e.severity !== DiagnosticSeverity.Information && e.severity !== DiagnosticSeverity.Warning;
+        }
+        return true;
+    });
+
+    connection.sendDiagnostics({
+        uri: textDocument.uri,
+        diagnostics: errors
+    });
 }
 
 //编译
 connection.onRequest("compile", ({
 	content
 } = {}) => {
-	const result = compile(content);
-	return result;
+    try {
+        return compile(content);
+    } catch (err) {
+        return {
+            error: err
+        };
+    }
 });
 
 //获取配置项

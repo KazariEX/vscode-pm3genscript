@@ -1,14 +1,10 @@
-
 {
 	"scripts": {
 		"compile": "tsc -b",
-		"test": "npm run compile && nodemon test/index.mjs"
-	},
-	"nodemonConfig": {
-		"ignore": ["./out/*"]
+		"test": "nodemon test/test.ts"
 	},
 	"dependencies": {
-		"chevrotain": "^10.1.2",
+		"chevrotain": "^11.0.0",
 		"vscode-languageserver": "^9.0.1",
 		"vscode-languageserver-textdocument": "^1.0.11"
 	}

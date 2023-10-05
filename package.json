@@ -1,7 +1,11 @@
 {
   "name": "vscode-pm3genscript",
-  "displayName": "Pokemon Third Generation Script",
-  "description": "",
+  "displayName": "Pokemon 3rd Generation Script",
+  "author": {
+    "name": "KazariEX",
+    "url": "https://bikariarchive.xyz"
+  },
+  "description": "VSCode for pokemon-3rd-generation-script.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.54.0"
@@ -19,7 +23,7 @@
     "commands": [
       {
         "command": "pm3genscript.compile",
-        "category": "pm3genscript",
+        "category": "PM3GenScript",
         "title": "编译"
       }
     ],
@@ -62,5 +66,8 @@
   "devDependencies": {
     "@types/node": "^20.8.2",
     "@types/vscode": "^1.82.0"
+  },
+  "dependencies": {
+    "chevrotain": "^11.0.3"
   }
 }
