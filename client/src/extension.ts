@@ -9,7 +9,7 @@ import {
 import pm3genHoverProvider from "./features/hoverProvider";
 import pm3genSignatureHelpProvider from "./features/signatureHelpProvider";
 import { macros, commands } from "./data";
-import { arrayToHexString } from "./utils";
+import { arrayToHexString, numberToHexString } from "./utils";
 import { GBA } from "./gba";
 
 //语言ID
@@ -61,9 +61,17 @@ export function activate(context: vscode.ExtensionContext)
             vscode.window.showInformationMessage(`编译成功！`);
             outputChannel.clear();
             outputChannel.show();
+
+            //定义列表
+            const definelist = getDefineListString(res);
+            if (definelist !== null) {
+                outputChannel.appendLine(definelist);
+            }
+
+            //脚本块
             res.blocks.forEach((block) => {
-                const title = block.dynamicName ?? block.offset;
-                outputChannel.appendLine(`${title} [${block.length}]`);
+                const title = block.dynamicName ?? numberToHexString(block.offset);
+                outputChannel.appendLine(`\n${title} [${block.length}]`);
                 outputChannel.appendLine(arrayToHexString(block.data.flat(2)));
             });
         }
@@ -81,7 +89,7 @@ export function activate(context: vscode.ExtensionContext)
                 if (gba.filename === null) {
                     const filename = await openGBAFile();
                     if (!(gba.filename = filename)) {
-                        throw `写入失败：请打开正确的文件！`;
+                        throw `请打开正确的文件！`;
                     }
                 }
                 await gba.write(res);
@@ -89,12 +97,20 @@ export function activate(context: vscode.ExtensionContext)
                 vscode.window.showInformationMessage("写入成功！");
                 outputChannel.clear();
                 outputChannel.show();
+
+                //定义列表
+                const definelist = getDefineListString(res);
+                if (definelist !== null) {
+                    outputChannel.appendLine(definelist);
+                }
+
+                //脚本块
                 res.blocks.forEach((block) => {
-                    let title = `0x${block.offset.toString(16).toUpperCase()}`;
+                    let title = numberToHexString(block.offset);
                     if (block.dynamicName) {
                         title = `${block.dynamicName} => ${title}`;
                     }
-                    outputChannel.appendLine(`${title} [${block.length}]`);
+                    outputChannel.appendLine(`\n${title} [${block.length}]`);
                     outputChannel.appendLine(arrayToHexString(block.data.flat(2)));
                 });
             }
@@ -152,6 +168,7 @@ export function deactivate()
     }
 }
 
+//打开GBA文件
 async function openGBAFile(): Promise<string>
 {
     const uris = await vscode.window.showOpenDialog({
@@ -181,4 +198,17 @@ async function sendCompileRequire(): Promise<CompileResult>
     return await client.sendRequest("compile", {
         content
     });
+}
+
+//从编译结果获取定义列表字符串
+function getDefineListString(res: CompileResult): string
+{
+    let str = "";
+    for (const key in res.defines) {
+        str += `\n${key} = ${numberToHexString(res.defines[key])}`;
+    }
+    if (str.length === 0) {
+        return null;
+    }
+    return `定义列表：${str}`;
 }

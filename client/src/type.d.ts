@@ -1,10 +1,12 @@
 declare global {
     interface CompileResult {
         blocks: CompileBlock[],
-        definelist: boolean,
+        defines: {
+            [x: string]: number
+        },
         dynamic: {
             collection: {
-                [T in keyof any]: number[][]
+                [x: string]: number[][]
             },
             offset: number
         },

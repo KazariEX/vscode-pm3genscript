@@ -28,7 +28,7 @@ export class GBA {
             {
                 const rs = fs.createReadStream(filename, {
                     start: startOffset,
-                    end: startOffset + length * 2 - 1
+                    end: startOffset + Math.max(0x1000, length * 2) - 1
                 });
 
                 console.log(freeSpaceByte);
@@ -69,7 +69,7 @@ export class GBA {
                         resolve(startOffset + start);
                     }
                     else {
-                        find(startOffset + length * 2);
+                        find(startOffset + start);
                     }
                 });
             }

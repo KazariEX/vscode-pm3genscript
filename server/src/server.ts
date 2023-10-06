@@ -2,7 +2,7 @@ import * as lsp from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { DiagnosticSeverity, TextDocumentSyncKind } from "vscode-languageserver";
 import { check } from "./check";
-import { compile } from "./compile/compiler";
+import { compile } from "./compile";
 
 //创建连接
 const connection = lsp.createConnection();
@@ -56,10 +56,11 @@ async function validateTextDocument(textDocument: TextDocument)
 
 //编译
 connection.onRequest("compile", ({
-	content
+	content,
+    uri
 } = {}) => {
     try {
-        return compile(content);
+        return compile(content, { uri });
     } catch (err) {
         return {
             error: err.message

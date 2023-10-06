@@ -1,4 +1,4 @@
-import { getByteDataByLiteral } from ".";
+import { getByteDataByLiteral } from "./utils";
 
 export default function(command: ASTCommand, i: number, j: number, res: CompileResult)
 {

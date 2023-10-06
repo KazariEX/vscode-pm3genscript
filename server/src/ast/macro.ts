@@ -1,4 +1,9 @@
-import { getCurrentBlock, getLiteralValue } from ".";
+import * as fs from "fs";
+import * as path from "path";
+import * as url from "url";
+import { DiagnosticSeverity } from "vscode-languageserver";
+import { getCurrentBlock, getLiteralValue } from "./utils";
+import { text2ast } from ".";
 
 const handlers: {
     [K in keyof any]: (item: PTSSyntax, ast: AST, errors: PTSError[]) => void
@@ -38,7 +43,7 @@ const handlers: {
     },
     definelist(item, ast, errors)
     {
-        ast.definelist = true;
+        ast.displayDefineList = true;
     },
     dynamic(item, ast, errors)
     {
@@ -49,6 +54,65 @@ const handlers: {
     {
         const [p1] = item.params;
         ast.freeSpaceByte = getLiteralValue(p1, ast, errors);
+    },
+    include(item, ast, errors)
+    {
+        const [p1] = item.params;
+        try {
+            let base = ast.uri;
+            if (base.startsWith("file:///")) {
+                base = url.fileURLToPath(base);
+            }
+            const target = path.join(path.dirname(base), p1.value.slice(1, -1));
+
+            if (base !== target) {
+                const file = fs.readFileSync(target);
+                const text = file.toString();
+
+                const {
+                    ast: subAst,
+                    lexErrors,
+                    parseErrors,
+                    astErrors
+                } = text2ast(text, target);
+
+                if (lexErrors.length + parseErrors.length + astErrors.length === 0) {
+                    //合并提升宏
+                    ast.aliases = new Map([...ast.aliases, ...subAst.aliases]);
+                    ast.defines = new Map([...ast.defines, ...subAst.defines]);
+                    if (subAst.displayDefineList !== null) {
+                        ast.displayDefineList = subAst.displayDefineList;
+                    }
+                    if (subAst.dynamic.offset !== null) {
+                        ast.dynamic.offset = subAst.dynamic.offset;
+                    }
+                    if (subAst.freeSpaceByte !== null) {
+                        ast.freeSpaceByte = subAst.freeSpaceByte;
+                    }
+                }
+                else {
+                    errors.push({
+                        message: "包含的文件存在语法错误。",
+                        location: p1.location,
+                        serverity: DiagnosticSeverity.Error
+                    });
+                }
+            }
+            else {
+                errors.push({
+                    message: "文件包含自身。",
+                    location: p1.location,
+                    serverity: DiagnosticSeverity.Error
+                });
+            }
+        }
+        catch (err) {
+            errors.push({
+                message: "找不到文件。",
+                location: p1.location,
+                serverity: DiagnosticSeverity.Error
+            });
+        }
     },
     org(item, ast, errors)
     {
@@ -70,6 +134,25 @@ const handlers: {
         ast.state.at = block;
     },
     raw(item, ast, errors)
+    {
+        const block = getCurrentBlock(item, ast, errors);
+        if (block === null) return;
+
+        block.commands.push({
+            cmd: item.cmd,
+            type: item.type,
+            location: item.location,
+            params: item.params.map((param) => {
+                return {
+                    style: "literal",
+                    type: param.type as string,
+                    value: getLiteralValue(param, ast, errors),
+                    location: param.location
+                };
+            })
+        });
+    },
+    reserve(item, ast, errors)
     {
         const block = getCurrentBlock(item, ast, errors);
         if (block === null) return;

@@ -1,12 +1,12 @@
-import { getByteDataByBraille, getByteDataByLiteral, getByteDataByString } from ".";
+import { getByteDataByBraille, getByteDataByLiteral, getByteDataByString } from "./utils";
 
 const handlers: {
-    [K in keyof any]: (command: ASTCommand) => any
+    [K in keyof any]: (command: ASTCommand) => number[][]
 } = {
     braille(command)
     {
         try {
-            return getByteDataByBraille(command.params[0].value as string);
+            return [getByteDataByBraille(command.params[0].value as string)];
         }
         catch (err) {
             throw new Error(`不在盲文表内的字符，位于行 ${command.location.startLine}。`);
@@ -18,9 +18,13 @@ const handlers: {
             return getByteDataByLiteral(param as ASTLiteralParam);
         });
     },
+    reserve(command)
+    {
+        return [new Array(command.params[0].value as number).fill(0x01)];
+    },
     ["="](command)
     {
-        return getByteDataByString(command.params[0].value as string);
+        return [getByteDataByString(command.params[0].value as string)];
     }
 };
 

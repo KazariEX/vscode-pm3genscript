@@ -1,74 +1,61 @@
-import * as fs from "fs";
-import * as path from "path";
-import * as YAML from "yaml";
+import { text2ast } from "../ast";
+import macroCompiler from "./macro";
+import commandCompiler from "./command";
 
-const character_en_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../data/character_en.yaml"), "utf8"));
-const character_zh_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../data/character_zh.yaml"), "utf8"));
-const braille_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../data/braille.yaml"), "utf8"));
-
-const character_en_table_invert = invertKeyValues(character_en_table);
-const character_zh_table_invert = invertKeyValues(character_zh_table);
-const braille_table_invert = invertKeyValues(braille_table);
-
-//从盲文表获取字节数组
-export function getByteDataByBraille(str: string): number[]
+export function compile(content: string, { uri }: CompileOptions = {}): CompileResult
 {
-    str = str.slice(1, -1);
-    return [...str].map((char) => {
-        if (/[a-zA-Z]/.test(char)) {
-            return Number(braille_table_invert[char.toUpperCase()]);
+    const {
+        ast,
+        lexErrors,
+        parseErrors,
+        astErrors
+    } = text2ast(content, uri);
+
+    if (lexErrors.length + parseErrors.length + astErrors.length === 0) {
+        const res: CompileResult = {
+            blocks: [],
+            defines: {},
+            dynamic: {
+                collection: {},
+                offset: ast.dynamic.offset
+            },
+            freeSpaceByte: ast.freeSpaceByte
+        };
+
+        if (ast.displayDefineList === true) {
+            for (const [key, value] of ast.defines.entries()) {
+                res.defines[key] = value;
+            }
         }
-        else {
-            throw 0;
-        }
-    });
-}
 
-//从字符串获取字节数组
-export function getByteDataByString(str: string): number[]
-{
-    str = str.slice(1, -1);
-    const chars = [...str];
+        res.blocks.push(...ast.blocks.map((item, i) => {
+            const block: CompileBlock = {
+                dynamicName: item.dynamicName,
+                offset: item.offset,
+                length: 0,
+                data: []
+            };
 
-    for (let i = 0; i < chars.length; i++) {
+            //编译宏指令
 
+
+            //编译脚本块指令
+            block.data = item.commands.map((command, j) => {
+                const data: any = [];
+
+                if (command.type === "macro") {
+                    data.push(macroCompiler(command));
+                } else {
+                    data.push(...commandCompiler(command, i, j, res));
+                }
+                return data.flat(1);
+            });
+
+            block.length = block.data.flat(2).length;
+            return block;
+        }));
+
+        return res;
     }
-    return [1, 2, 3];
-}
-
-//根据类型获取字节数组
-export function getByteDataByLiteral(param: ASTLiteralParam): number[]
-{
-    const res = [];
-    const fn = (value: number) => (res.unshift(value % 0x100), value >> 8);
-
-    const { type } = param;
-    let { value } = param;
-
-    if (type === "pointer") {
-        if (value < 0x2000000) value += 0x8000000;
-        for (let i = 0; i < 4; i++, value >>= 8) {
-            res.push(value % 0x100);
-        }
-    }
-    else switch (type) {
-        case "dword":
-            value = fn(value);
-            value = fn(value);
-        case "word":
-            value = fn(value);
-        case "byte":
-            value = fn(value);
-    }
-
-    return res;
-}
-
-//反转键值对
-function invertKeyValues(obj: object)
-{
-    return Object.keys(obj).reduce((acc, key) => {
-        acc[obj[key]] = key;
-        return acc;
-    }, {});
+    else throw new Error("请检查语法错误。");
 }

@@ -1,6 +1,8 @@
-import { compile } from "../src/compile/compiler";
+import { compile } from "../src/compile";
 
 const result = compile(`
+#include "header.pts"
+
 #dynamic 0xA05000
 
 #org @1
@@ -10,7 +12,6 @@ clearflag 0x2050
 goto @2
 
 #org @2
+#reserve 0xA
 #raw word 0x10
 `);
-
-console.log(result.blocks[0].data, result);

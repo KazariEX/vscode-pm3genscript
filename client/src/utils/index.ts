@@ -17,6 +17,12 @@ export function arrayToHexString(arr: Array<number>): string
     }).join(" ");
 }
 
+//数字转十六进制字符串
+export function numberToHexString(value: Number): string
+{
+    return `0x${value.toString(16).toUpperCase()}`;
+}
+
 //指针转十六进制数组
 export function getByteDataByPointer(offset: number): number[]
 {

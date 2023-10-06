@@ -1,17 +1,15 @@
 {
   "name": "vscode-pm3genscript",
   "displayName": "Pokemon 3rd Generation Script",
-  "author": {
-    "name": "KazariEX",
-    "url": "https://bikariarchive.xyz"
-  },
   "description": "VSCode for pokemon-3rd-generation-script.",
   "version": "0.0.1",
+  "publisher": "KazariEX",
+  "repository": "https://github.com/MysteryBao37/vscode-pm3genscript",
   "engines": {
-    "vscode": "^1.54.0"
+    "vscode": "^1.82.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages"
   ],
   "main": "./client/out/extension",
   "scripts": {

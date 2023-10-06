@@ -1,4 +1,4 @@
-import { getCurrentBlock, getLiteralValue } from ".";
+import { getCurrentBlock, getLiteralValue } from "./utils";
 
 export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
 {

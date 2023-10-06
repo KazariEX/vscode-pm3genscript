@@ -12,7 +12,7 @@ declare global {
     interface AST {
         aliases: Map<string, string>,
         defines: Map<string, number>,
-        definelist: boolean,
+        displayDefineList: boolean,
         dynamic: {
             collection: {
                 macro: PTSParam[],
@@ -25,7 +25,8 @@ declare global {
         state: {
             at: ASTBlock,
             break: boolean
-        }
+        },
+        uri: string
     }
 
     interface ASTBlock extends WithLocation {
@@ -55,12 +56,18 @@ declare global {
         (item: PTSSyntax, ast: AST, errors: PTSError[]): void
     }
 
+    interface CompileOptions {
+        uri?: string
+    }
+
     interface CompileResult {
         blocks: CompileBlock[],
-        definelist: boolean,
+        defines: {
+            [x: string]: number
+        },
         dynamic: {
             collection: {
-                [T in keyof any]: number[][]
+                [x: string]: number[][]
             },
             offset: number
         },

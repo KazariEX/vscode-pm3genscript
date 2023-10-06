@@ -1,41 +1,10 @@
 import { IToken, CstNode, CstNodeLocation } from "chevrotain";
 import { DiagnosticSeverity } from "vscode-languageserver";
 import { BasePTSVisitor } from "../parser";
-import { typelint, validate, validateDynamicOffset } from ".";
+import { typelint, validate, validateDynamicOffset } from "./utils";
 import macroHandler from "./macro";
 import commandHandler from "./command";
 import { macros, commands, rawTypes } from "../data";
-
-export function toAST(cstNode: CstNode)
-{
-    const ast: AST = {
-        aliases: new Map(),
-        defines: new Map(),
-        definelist: false,
-        dynamic: {
-            collection: {
-                macro: [],
-                command: []
-            },
-            offset: null
-        },
-        freeSpaceByte: 0xFF,
-        blocks: [],
-        state: {
-            at: null,
-            break: false
-        }
-    };
-
-    const errors: PTSError[] = [];
-    const astVisitor = new ASTVisitor();
-    astVisitor.visit(cstNode, { ast, errors });
-
-    return {
-        ast,
-        errors
-    };
-}
 
 export class ASTVisitor extends BasePTSVisitor {
     constructor()
@@ -53,10 +22,13 @@ export class ASTVisitor extends BasePTSVisitor {
         /* ------------------------------------------------------------ */
         syntaxes.push(...mode("Macro"));
 
-        //别名提升
+        //宏提升
         for (let i = 0; i < syntaxes.length; i++) {
             const item = syntaxes[i];
-            if (["alias", "unalias", "unaliasall"].includes(item.cmd)) {
+            if (item.error) {
+                syntaxes.splice(i--, 1);
+            }
+            else if (item.template.hoisting) {
                 macroHandler(item, ast, errors);
                 syntaxes.splice(i--, 1);
             }
@@ -65,17 +37,10 @@ export class ASTVisitor extends BasePTSVisitor {
         syntaxes.push(...mode("Raw"), ...mode("Command"), ...mode("If0"));
         /* ------------------------------------------------------------ */
 
-        //宏提升与全排序
+        //全排序
         const sorted = syntaxes
         .filter((item) => !item.error)
-        .sort((a, b) => {
-            if ((a.template.hoisting) === (b.template.hoisting)) {
-                return (a.location.startOffset - b.location.startOffset);
-            }
-            else {
-                return a.template.hoisting ? -1 : 1;
-            }
-        });
+        .sort((a, b) => a.location.startOffset - b.location.startOffset);
 
         //顺序解析剩余脚本
         for (const item of sorted) {
@@ -121,6 +86,7 @@ export class ASTVisitor extends BasePTSVisitor {
 
             //所需参数
             const needs = result.template.params;
+            const count = needs?.length || 0;
 
             //实际参数
             ctx.MacroParam?.forEach((item: CstNode, i: number) => {
@@ -128,7 +94,7 @@ export class ASTVisitor extends BasePTSVisitor {
                 result.params.push(p);
             });
 
-            const count = needs?.length || 0;
+            //参数数量检测
             result.error ||= !checkParamsCount(result, count, errors);
 
             //参数类型校验
@@ -243,13 +209,15 @@ export class ASTVisitor extends BasePTSVisitor {
 
             //所需参数
             const needs = commands[result.cmd].params;
+            const count = needs?.length || 0;
 
             //实际参数
             ctx.Param?.forEach((item: CstNode, i: number) => {
                 const p = this.visit(item, { type: needs?.[i]?.type });
                 result.params.push(p);
             });
-            const count = needs?.length || 0;
+
+            //参数数量检测
             result.error ||= !checkParamsCount(result, count, errors);
 
             //参数类型校验
@@ -310,7 +278,7 @@ function getLocationFromToken(token: IToken): CstNodeLocation
 	return { startColumn, startLine, startOffset, endColumn, endLine, endOffset };
 }
 
-//检查参数数量
+//检查参数的数量
 function checkParamsCount({
     cmd,
     location,

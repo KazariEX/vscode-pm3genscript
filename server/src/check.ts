@@ -1,18 +1,22 @@
 import * as lsp from "vscode-languageserver";
 import { EOF } from "chevrotain";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { ptsLexer } from "./lexer";
-import { ptsParser } from "./parser";
-import { toAST } from "./ast/visitor";
+import { text2ast } from "./ast";
 
 export function check(content: TextDocument): lsp.Diagnostic[]
 {
     const errors: lsp.Diagnostic[] = [];
     const text = content.getText();
+    const uri = content.uri;
 
-    const lexResult = ptsLexer.tokenize(text);
-    if (lexResult.errors.length > 0) {
-        errors.push(...lexResult.errors.map((e) => ({
+    const {
+        lexErrors,
+        parseErrors,
+        astErrors
+    } = text2ast(text, uri);
+
+    if (lexErrors.length > 0) {
+        errors.push(...lexErrors.map((e) => ({
             severity: lsp.DiagnosticSeverity.Error,
             message: e.message,
             range: {
@@ -28,10 +32,8 @@ export function check(content: TextDocument): lsp.Diagnostic[]
         })));
     }
 
-    ptsParser.input = lexResult.tokens;
-    const parseResult = ptsParser.all();
-    if (ptsParser.errors.length > 0) {
-        errors.push(...ptsParser.errors.map((e) => ({
+    if (parseErrors.length > 0) {
+        errors.push(...parseErrors.map((e) => ({
             message: e.message,
             serverity: lsp.DiagnosticSeverity.Error,
             range: e.token.tokenType === EOF ? {
@@ -50,26 +52,22 @@ export function check(content: TextDocument): lsp.Diagnostic[]
         })));
     }
 
-    const astResult = toAST(parseResult);
-    errors.push(...astResult.errors.map((e) => errorTransformer(e)));
+    if (astErrors.length > 0) {
+        errors.push(...astErrors.map((e) => ({
+            message: e.message,
+            severity: e.serverity,
+            range: {
+                start: {
+                    line: e.location.startLine - 1,
+                    character: e.location.startColumn - 1
+                },
+                end: {
+                    line: e.location.endLine - 1,
+                    character: e.location.endColumn
+                }
+            }
+        })));
+    }
 
     return errors;
-}
-
-function errorTransformer(e: PTSError): lsp.Diagnostic
-{
-    return {
-        message: e.message,
-        severity: e.serverity,
-        range: {
-            start: {
-                line: e.location.startLine - 1,
-                character: e.location.startColumn - 1
-            },
-            end: {
-                line: e.location.endLine - 1,
-                character: e.location.endColumn
-            }
-        }
-    };
 }
