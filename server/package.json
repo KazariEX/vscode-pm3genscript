@@ -1,11 +1,11 @@
 {
 	"scripts": {
-		"compile": "tsc -b",
-		"test": "nodemon test/test.ts"
+		"test": "nodemon test/index.ts"
 	},
 	"dependencies": {
-		"chevrotain": "^11.0.0",
+		"chevrotain": "^10.5.0",
 		"vscode-languageserver": "^9.0.1",
-		"vscode-languageserver-textdocument": "^1.0.11"
+		"vscode-languageserver-textdocument": "^1.0.11",
+		"yaml": "^2.3.2"
 	}
 }

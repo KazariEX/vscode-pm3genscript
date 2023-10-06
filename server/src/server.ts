@@ -2,7 +2,7 @@ import * as lsp from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { DiagnosticSeverity, TextDocumentSyncKind } from "vscode-languageserver";
 import { check } from "./check";
-import { compile } from "./compile";
+import { compile } from "./compile/compiler";
 
 //创建连接
 const connection = lsp.createConnection();
@@ -62,7 +62,7 @@ connection.onRequest("compile", ({
         return compile(content);
     } catch (err) {
         return {
-            error: err
+            error: err.message
         };
     }
 });

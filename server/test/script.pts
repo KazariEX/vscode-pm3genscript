@@ -4,4 +4,7 @@
 setvar 0x4050 0x1
 setflag 0x208C
 clearflag 0x2050
-end
+goto @2
+
+#org @2
+#raw word 0x10

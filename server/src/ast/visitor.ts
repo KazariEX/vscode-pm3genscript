@@ -1,30 +1,99 @@
+import { IToken, CstNode, CstNodeLocation } from "chevrotain";
 import { DiagnosticSeverity } from "vscode-languageserver";
-import { CstChildrenDictionary, IToken, CstNode, ICstVisitor, CstNodeLocation } from "chevrotain";
 import { BasePTSVisitor } from "../parser";
-import { macros, commands, rawTypes, WordData } from "../data";
-import { typelint, validate } from "./validate";
+import { typelint, validate, validateDynamicOffset } from ".";
+import macroHandler from "./macro";
+import commandHandler from "./command";
+import { macros, commands, rawTypes } from "../data";
 
-export class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[], any> {
+export function toAST(cstNode: CstNode)
+{
+    const ast: AST = {
+        aliases: new Map(),
+        defines: new Map(),
+        definelist: false,
+        dynamic: {
+            collection: {
+                macro: [],
+                command: []
+            },
+            offset: null
+        },
+        freeSpaceByte: 0xFF,
+        blocks: [],
+        state: {
+            at: null,
+            break: false
+        }
+    };
+
+    const errors: PTSError[] = [];
+    const astVisitor = new ASTVisitor();
+    astVisitor.visit(cstNode, { ast, errors });
+
+    return {
+        ast,
+        errors
+    };
+}
+
+export class ASTVisitor extends BasePTSVisitor {
     constructor()
     {
         super();
         this.validateVisitor();
     }
 
-    All(ctx: CstChildrenDictionary, errors: PTSError[])
+    //全量处理
+    All(ctx, { ast, errors }: ASTVisitorParams)
     {
-        const mode = (visitor: string) => ctx[visitor]?.map((item) => this.visit(item as CstNode, errors)) || [];
+        const mode = (visitor: string) => ctx[visitor]?.map((item) => this.visit(item, { ast, errors })) || [];
+        const syntaxes: PTSSyntax[] = [];
 
-        const res = {
-            macros: [ ...mode("Macro"), ...mode("Raw") ],
-            commands: mode("Command")
-        };
+        /* ------------------------------------------------------------ */
+        syntaxes.push(...mode("Macro"));
 
-        return res;
+        //别名提升
+        for (let i = 0; i < syntaxes.length; i++) {
+            const item = syntaxes[i];
+            if (["alias", "unalias", "unaliasall"].includes(item.cmd)) {
+                macroHandler(item, ast, errors);
+                syntaxes.splice(i--, 1);
+            }
+        }
+
+        syntaxes.push(...mode("Raw"), ...mode("Command"), ...mode("If0"));
+        /* ------------------------------------------------------------ */
+
+        //宏提升与全排序
+        const sorted = syntaxes
+        .filter((item) => !item.error)
+        .sort((a, b) => {
+            if ((a.template.hoisting) === (b.template.hoisting)) {
+                return (a.location.startOffset - b.location.startOffset);
+            }
+            else {
+                return a.template.hoisting ? -1 : 1;
+            }
+        });
+
+        //顺序解析剩余脚本
+        for (const item of sorted) {
+            if (ast.state.break === true) break;
+            if (item.type === "macro") {
+                macroHandler(item, ast, errors);
+            }
+            else {
+                commandHandler(item, ast, errors);
+            }
+        }
+
+        //动态偏移校验
+        validateDynamicOffset(ast, errors);
     }
 
     //编译器宏
-    Macro(ctx, errors: PTSError[]): PTSSyntax
+    Macro(ctx, { errors }: ASTVisitorParams): PTSSyntax
     {
         const token = ctx.macro[0];
         const result: PTSSyntax = {
@@ -54,10 +123,11 @@ export class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[]
             const needs = result.template.params;
 
             //实际参数
-            ctx.Param?.forEach((item: CstNode, i: number) => {
-                const p = this.visit(item, needs?.[i]?.type);
+            ctx.MacroParam?.forEach((item: CstNode, i: number) => {
+                const p = this.visit(item, { type: needs?.[i]?.type });
                 result.params.push(p);
             });
+
             const count = needs?.length || 0;
             result.error ||= !checkParamsCount(result, count, errors);
 
@@ -76,65 +146,8 @@ export class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[]
         return result;
     }
 
-    //指令
-    Command(ctx, errors: PTSError[]): PTSSyntax
-    {
-        const token = ctx.command[0];
-        const result: PTSSyntax = {
-            cmd: token.image,
-            type: "command",
-            template: null,
-            location: getLocationFromToken(token),
-            params: [],
-            error: false
-        };
-
-        if (result.cmd in commands) {
-            //语法模板
-            result.template = commands[result.cmd];
-
-            //所需参数
-            const needs = commands[result.cmd].params;
-
-            //实际参数
-            ctx.Param?.forEach((item: CstNode, i: number) => {
-                const p: PTSParam = this.visit(item, needs?.[i]?.type);
-                result.params.push(p);
-            });
-            const count = needs?.length || 0;
-            result.error ||= !checkParamsCount(result, count, errors);
-
-            //参数类型校验
-            result.error ||= !validate(result, errors);
-        }
-        else {
-            result.error = true;
-            errors.push({
-                message: `未知的指令。`,
-                location: result.location,
-                serverity: DiagnosticSeverity.Error
-            });
-        }
-
-        return result;
-    }
-
-    //参数
-    Param(ctx, type: string | string[]): PTSParam
-    {
-        for (const key in ctx) {
-            const token = ctx[key][0];
-            return {
-                style: key as ParamType,
-                type,
-                value: token.image,
-                location: getLocationFromToken(token)
-            };
-        }
-    }
-
     //RAW模式
-    Raw(ctx, errors: PTSError[]): PTSSyntax
+    Raw(ctx, { errors }: ASTVisitorParams): PTSSyntax
     {
         const token = ctx.raw[0];
         const result: PTSSyntax = {
@@ -204,6 +217,89 @@ export class ASTVisitor extends BasePTSVisitor implements ICstVisitor<PTSError[]
         }, true);
 
         return result;
+    }
+
+    //指令
+    Command(ctx, { ast, errors }: ASTVisitorParams): PTSSyntax
+    {
+        const token = ctx.command[0];
+        const result: PTSSyntax = {
+            cmd: token.image,
+            type: "command",
+            template: null,
+            location: getLocationFromToken(token),
+            params: [],
+            error: false
+        };
+
+        //别名替换
+        if (ast.aliases.has(result.cmd)) {
+            result.cmd = ast.aliases.get(result.cmd);
+        }
+
+        if (result.cmd in commands) {
+            //语法模板
+            result.template = commands[result.cmd];
+
+            //所需参数
+            const needs = commands[result.cmd].params;
+
+            //实际参数
+            ctx.Param?.forEach((item: CstNode, i: number) => {
+                const p = this.visit(item, { type: needs?.[i]?.type });
+                result.params.push(p);
+            });
+            const count = needs?.length || 0;
+            result.error ||= !checkParamsCount(result, count, errors);
+
+            //参数类型校验
+            result.error ||= !validate(result, errors);
+        }
+        else {
+            result.error = true;
+            errors.push({
+                message: `未知的指令。`,
+                location: result.location,
+                serverity: DiagnosticSeverity.Error
+            });
+        }
+
+        return result;
+    }
+
+    //[if]语法糖
+    If0(ctx, { ast, errors }: ASTVisitorParams)
+    {
+        const cmd = ctx.if0[0];
+        const subcmd = ctx.command?.[0];
+        if (subcmd !== void(0)) {
+            const { image } = subcmd;
+            cmd.image = {
+                "goto": "if1",
+                "call": "if2"
+            }[image];
+        }
+        return this.Command({
+            command: [ cmd ],
+            Param: ctx.Param
+        }, { ast, errors });
+    }
+
+    //宏参数
+    get MacroParam() { return this.Param; }
+
+    //参数
+    Param(ctx, { type }: ASTVisitorParams): PTSParam
+    {
+        for (const key in ctx) {
+            const token = ctx[key][0];
+            return {
+                style: key as ParamType,
+                type,
+                value: token.image,
+                location: getLocationFromToken(token)
+            };
+        }
     }
 }
 

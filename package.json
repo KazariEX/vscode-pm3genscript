@@ -25,6 +25,11 @@
         "command": "pm3genscript.compile",
         "category": "PM3GenScript",
         "title": "编译"
+      },
+      {
+        "command": "pm3genscript.write",
+        "category": "PM3GenScript",
+        "title": "写入"
       }
     ],
     "menus": {
@@ -34,6 +39,12 @@
           "command": "pm3genscript.compile",
           "group": "pm3genscript",
           "title": "编译"
+        },
+        {
+          "when": "resourceLangId == pm3genscript",
+          "command": "pm3genscript.write",
+          "group": "pm3genscript",
+          "title": "写入"
         }
       ]
     },

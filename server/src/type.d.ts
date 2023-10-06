@@ -3,7 +3,14 @@ import { DiagnosticSeverity } from "vscode-languageserver";
 import { WordData } from "./data";
 
 declare global {
+    interface ASTVisitorParams {
+        ast?: AST,
+        errors?: PTSError[],
+        type?: string | string[]
+    }
+
     interface AST {
+        aliases: Map<string, string>,
         defines: Map<string, number>,
         definelist: boolean,
         dynamic: {
@@ -13,14 +20,12 @@ declare global {
             },
             offset: number
         }
-        freespace: number,
+        freeSpaceByte: number,
         blocks: ASTBlock[],
-        state: ASTState
-    }
-
-    interface ASTState {
-        at: ASTBlock,
-        break: boolean
+        state: {
+            at: ASTBlock,
+            break: boolean
+        }
     }
 
     interface ASTBlock extends WithLocation {
@@ -33,7 +38,7 @@ declare global {
         cmd: string,
         type: string,
         value?: number,
-        params: Array<ASTDynamicParam | ASTLiteralParam>
+        params: Array<ASTDynamicParam | ASTLiteralParam | ASTStringParam>
     }
 
     interface ASTParam<Style, Value> extends WithLocation {
@@ -44,6 +49,7 @@ declare global {
 
     type ASTDynamicParam = ASTParam<"dynamic", string>;
     type ASTLiteralParam = ASTParam<"literal", number>;
+    type ASTStringParam = ASTParam<"string", string>;
 
     interface ASTMacroHandler {
         (item: PTSSyntax, ast: AST, errors: PTSError[]): void
@@ -51,13 +57,20 @@ declare global {
 
     interface CompileResult {
         blocks: CompileBlock[],
-        dynamics: Map<string, number[][]>
+        definelist: boolean,
+        dynamic: {
+            collection: {
+                [T in keyof any]: number[][]
+            },
+            offset: number
+        },
+        freeSpaceByte: number
     }
 
     interface CompileBlock {
         dynamicName?: string,
         offset?: number,
-        bytes: number,
+        length: number,
         data: number[]
     }
 

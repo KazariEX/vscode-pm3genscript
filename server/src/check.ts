@@ -3,7 +3,7 @@ import { EOF } from "chevrotain";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { ptsLexer } from "./lexer";
 import { ptsParser } from "./parser";
-import { toAST } from "./ast";
+import { toAST } from "./ast/visitor";
 
 export function check(content: TextDocument): lsp.Diagnostic[]
 {

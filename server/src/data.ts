@@ -1,5 +1,5 @@
 export type WordData = {
-    [K in keyof any]: {
+    readonly [K in keyof any]: {
         alias?: string[],
         bytes?: number,
         description?: {

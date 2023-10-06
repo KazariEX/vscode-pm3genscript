@@ -1,21 +1,13 @@
-import { DiagnosticSeverity } from "vscode-languageserver";
-import { getLiteralValue } from ".";
+import { getCurrentBlock, getLiteralValue } from ".";
 
 export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
 {
-    const block = ast.state.at;
-    if (block === null) {
-        errors.push({
-            message: "指令不在任何脚本块内。",
-            location: item.location,
-            serverity: DiagnosticSeverity.Error
-        });
-        return;
-    }
+    const block = getCurrentBlock(item, ast, errors);
+    if (block === null) return;
 
     block.commands.push({
         cmd: item.cmd,
-        type: "command",
+        type: item.type,
         value: item.template.value,
         location: item.location,
         params: item.params.map((param) => {

@@ -11,15 +11,18 @@ class PTSParser extends CstParser {
     all = this.RULE("All", () => {
         this.MANY(() => this.OR([
             { ALT: () => this.SUBRULE(this.macro) },
+            { ALT: () => this.SUBRULE(this.raw) },
             { ALT: () => this.SUBRULE(this.command) },
-            { ALT: () => this.SUBRULE(this.raw) }
+            { ALT: () => this.SUBRULE(this.if0)}
         ]));
     });
 
     //编译器宏
     macro = this.RULE("Macro", () => {
         this.CONSUME(tokenTypes.macro);
-        this.MANY(() => this.SUBRULE(this.param));
+        this.MANY(() => {
+            this.SUBRULE(this.macro_param);
+        });
         this.OPTION(() => this.CONSUME(tokenTypes.pop_endline));
     });
 
@@ -40,6 +43,26 @@ class PTSParser extends CstParser {
         this.MANY(() => {
             this.SUBRULE(this.param);
         });
+    });
+
+    //[if]语法糖
+    if0 = this.RULE("If0", () => {
+        this.CONSUME(tokenTypes.if0);
+        this.MANY(() => this.OR([
+            { ALT: () => this.SUBRULE(this.param) },
+            { ALT: () => this.CONSUME(tokenTypes.command) }
+        ]));
+    });
+
+    //宏参数
+    macro_param = this.RULE("MacroParam", () => {
+        this.OR([
+            { ALT: () => this.CONSUME(tokenTypes.command) },
+            { ALT: () => this.CONSUME(tokenTypes.symbol) },
+            { ALT: () => this.CONSUME(tokenTypes.dynamic) },
+            { ALT: () => this.CONSUME(tokenTypes.literal) },
+            { ALT: () => this.CONSUME(tokenTypes.string) }
+        ]);
     });
 
     //参数

@@ -3,6 +3,7 @@
         "module": "CommonJS",
         "target": "ESNext",
         "lib": ["DOM", "ESNext"],
+        "types": ["./src/type.d.ts"],
         "outDir": "out",
         "rootDir": "src"
     },
