@@ -1,7 +1,8 @@
 import { IToken, CstNode, CstNodeLocation } from "chevrotain";
 import { DiagnosticSeverity } from "vscode-languageserver";
+import * as path from "path";
 import { BasePTSVisitor } from "../parser";
-import { typelint, validate, validateDynamicOffset } from "./utils";
+import { createLocation, typelint, validate, validateDynamicOffset } from "./utils";
 import macroHandler from "./macro";
 import commandHandler from "./command";
 import { macros, commands, rawTypes } from "../data";
@@ -18,6 +19,28 @@ export class ASTVisitor extends BasePTSVisitor {
     {
         const mode = (visitor: string) => ctx[visitor]?.map((item) => this.visit(item, { ast, errors })) || [];
         const syntaxes: PTSSyntax[] = [];
+
+        //内置包含
+        if (ast.extra.isReferenced === false) {
+            const p = path.join(require.main.path, "../data/script/");
+            for (const name of [
+                "std", "stdattacks", "stditems", "stdpoke"
+            ]) {
+                macroHandler({
+                    cmd: "include",
+                    type: "macro",
+                    template: macros["include"],
+                    location: createLocation(0, 1, 1, 0, 1, 1),
+                    params: [{
+                        style: "string",
+                        type: "string",
+                        value: `"${p + name}.pts"`,
+                        location: createLocation(0, 1, 1, 0, 1, 1)
+                    }],
+                    error: false
+                }, ast, errors);
+            }
+        }
 
         /* ------------------------------------------------------------ */
         syntaxes.push(...mode("Macro"));

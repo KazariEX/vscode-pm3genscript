@@ -59,11 +59,16 @@ const handlers: {
     {
         const [p1] = item.params;
         try {
-            let base = ast.uri;
-            if (base.startsWith("file:///")) {
-                base = url.fileURLToPath(base);
+            let base = ast.extra.uri;
+            let target = p1.value.slice(1, -1);
+
+            //相对路径
+            if (!path.isAbsolute(target)) {
+                if (base.startsWith("file:///")) {
+                    base = url.fileURLToPath(base);
+                }
+                target = path.join(path.dirname(base), target);
             }
-            const target = path.join(path.dirname(base), p1.value.slice(1, -1));
 
             if (base !== target) {
                 const file = fs.readFileSync(target);
@@ -74,7 +79,10 @@ const handlers: {
                     lexErrors,
                     parseErrors,
                     astErrors
-                } = text2ast(text, target);
+                } = text2ast(text, {
+                    isReferenced: true,
+                    uri: target
+                });
 
                 if (lexErrors.length + parseErrors.length + astErrors.length === 0) {
                     //合并提升宏

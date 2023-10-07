@@ -2,14 +2,17 @@ import { text2ast } from "../ast";
 import macroCompiler from "./macro";
 import commandCompiler from "./command";
 
-export function compile(content: string, { uri }: CompileOptions = {}): CompileResult
+export function compile(content: string, uri?: string): CompileResult
 {
     const {
         ast,
         lexErrors,
         parseErrors,
         astErrors
-    } = text2ast(content, uri);
+    } = text2ast(content, {
+        isReferenced: false,
+        uri
+    });
 
     if (lexErrors.length + parseErrors.length + astErrors.length === 0) {
         const res: CompileResult = {

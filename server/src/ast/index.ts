@@ -3,12 +3,12 @@ import { ASTVisitor } from "./visitor";
 import { ptsLexer } from "../lexer";
 import { ptsParser } from "../parser";
 
-export function text2ast(text: string, uri?: string)
+export function text2ast(text: string, extra: ASTExtra)
 {
     const lexResult = ptsLexer.tokenize(text);
     ptsParser.input = lexResult.tokens;
     const parseResult = ptsParser.all();
-    const astResult = cst2ast(parseResult, { uri });
+    const astResult = cst2ast(parseResult, extra);
 
     return {
         ast: astResult.ast,
@@ -18,7 +18,8 @@ export function text2ast(text: string, uri?: string)
     };
 }
 
-function cst2ast(cstNode: CstNode, { uri }) {
+function cst2ast(cstNode: CstNode, extra: ASTExtra)
+{
     const ast: AST = {
         aliases: new Map(),
         defines: new Map(),
@@ -36,7 +37,7 @@ function cst2ast(cstNode: CstNode, { uri }) {
             at: null,
             break: false
         },
-        uri
+        extra
     };
 
     const errors: PTSError[] = [];

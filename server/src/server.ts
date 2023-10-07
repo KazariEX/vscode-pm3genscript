@@ -60,7 +60,7 @@ connection.onRequest("compile", ({
     uri
 } = {}) => {
     try {
-        return compile(content, { uri });
+        return compile(content, uri);
     } catch (err) {
         return {
             error: err.message

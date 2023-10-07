@@ -26,7 +26,7 @@ declare global {
             at: ASTBlock,
             break: boolean
         },
-        uri: string
+        extra: ASTExtra
     }
 
     interface ASTBlock extends WithLocation {
@@ -48,13 +48,14 @@ declare global {
         value: Value
     }
 
+    interface ASTExtra {
+        isReferenced: boolean,
+        uri: string
+    }
+
     type ASTDynamicParam = ASTParam<"dynamic", string>;
     type ASTLiteralParam = ASTParam<"literal", number>;
     type ASTStringParam = ASTParam<"string", string>;
-
-    interface ASTMacroHandler {
-        (item: PTSSyntax, ast: AST, errors: PTSError[]): void
-    }
 
     interface CompileOptions {
         uri?: string

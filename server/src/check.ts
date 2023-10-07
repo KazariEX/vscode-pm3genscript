@@ -13,7 +13,10 @@ export function check(content: TextDocument): lsp.Diagnostic[]
         lexErrors,
         parseErrors,
         astErrors
-    } = text2ast(text, uri);
+    } = text2ast(text, {
+        isReferenced: false,
+        uri
+    });
 
     if (lexErrors.length > 0) {
         errors.push(...lexErrors.map((e) => ({
