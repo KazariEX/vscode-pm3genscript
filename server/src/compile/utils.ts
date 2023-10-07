@@ -40,18 +40,12 @@ export function getByteDataByString(str: string): number[]
 export function getByteDataByLiteral(param: ASTLiteralParam): number[]
 {
     const res = [];
-    const fn = (value: number) => (res.unshift(value % 0x100), value >> 8);
+    const fn = (value: number) => (res.push(value % 0x100), value >> 8);
 
-    const { type } = param;
     let { value } = param;
-
-    if (type === "pointer") {
-        if (value < 0x2000000) value += 0x8000000;
-        for (let i = 0; i < 4; i++, value >>= 8) {
-            res.push(value % 0x100);
-        }
-    }
-    else switch (type) {
+    switch (param.type) {
+        case "pointer":
+            if (value < 0x2000000) value += 0x8000000;
         case "dword":
             value = fn(value);
             value = fn(value);
@@ -60,7 +54,6 @@ export function getByteDataByLiteral(param: ASTLiteralParam): number[]
         case "byte":
             value = fn(value);
     }
-
     return res;
 }
 

@@ -1,6 +1,11 @@
 import { CancellationToken, Position, ProviderResult, SignatureHelp, SignatureInformation, SignatureHelpContext, SignatureHelpProvider, TextDocument, MarkdownString } from "vscode";
-import { all, macros } from "../data";
+import { commands, macros } from "../data";
 import { capitalizeFirstLetter } from "../utils";
+
+const all = {
+    ...commands,
+    ...macros
+};
 
 export default class pm3genSignatureHelpProvider implements SignatureHelpProvider {
     provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelp> | null {

@@ -4,7 +4,7 @@ import { tokenTypes } from "./lexer";
 class PTSParser extends CstParser {
     constructor()
     {
-        super(tokenTypes, { recoveryEnabled: true });
+        super(tokenTypes);
         this.performSelfAnalysis();
     }
 
@@ -48,10 +48,11 @@ class PTSParser extends CstParser {
     //[if]语法糖
     if0 = this.RULE("If0", () => {
         this.CONSUME(tokenTypes.if0);
-        this.MANY(() => this.OR([
-            { ALT: () => this.SUBRULE(this.param) },
-            { ALT: () => this.CONSUME(tokenTypes.command) }
-        ]));
+        this.SUBRULE1(this.param);
+        this.CONSUME(tokenTypes.command);
+        this.MANY(() => {
+            this.SUBRULE2(this.param);
+        });
     });
 
     //宏参数

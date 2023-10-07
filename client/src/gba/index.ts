@@ -2,7 +2,7 @@ import * as fs from "fs";
 import { getByteDataByPointer } from "../utils";
 
 export class GBA {
-    filename;
+    filename: string;
 
     constructor(filename: string = null)
     {

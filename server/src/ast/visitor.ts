@@ -227,6 +227,12 @@ export class ASTVisitor extends BasePTSVisitor {
         }
 
         if (result.cmd in commands) {
+            //重定向
+            const { redirect } = commands[result.cmd];
+            if (redirect in commands) {
+                result.cmd = redirect;
+            }
+
             //语法模板
             result.template = commands[result.cmd];
 
@@ -268,8 +274,9 @@ export class ASTVisitor extends BasePTSVisitor {
             cmd.image = {
                 "goto": "if1",
                 "call": "if2"
-            }[image];
+            }[image] || "if";
         }
+
         return this.Command({
             command: [ cmd ],
             Param: ctx.Param
