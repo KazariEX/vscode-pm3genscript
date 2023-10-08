@@ -29,19 +29,13 @@ export function getByteDataByString(str: string): number[]
     const res = [];
     const chars = [...str];
 
-    let escape = false;
+    let special = false;
     let transfer = "";
     for (let i = 0; i < chars.length; i++) {
-        const char = chars[i];
-        if (char === "[") {
-            if (escape === false) {
-                escape = true;
-                transfer += char;
-            }
-        }
-        else if (char === "]") {
-            if (escape === true) {
-                escape = false;
+        let char = chars[i];
+        if (special === true) {
+            if (char === "]") {
+                special = false;
                 transfer += char;
                 if (transfer in character_zh_table_invert) {
                     const code = character_zh_table_invert[transfer];
@@ -54,15 +48,25 @@ export function getByteDataByString(str: string): number[]
                 }
             }
             else {
-                throw char;
+                transfer += char;
             }
         }
         else {
-            if (escape === true) {
+            if (char === "[") {
+                special = true;
                 transfer += char;
             }
             else {
+                let escape = false;
+                if (char === "\\" && i < chars.length) {
+                    char += chars[i + 1];
+                    escape = true;
+                }
                 if (char in character_zh_table_invert) {
+                    if (escape === true) {
+                        escape = false;
+                        i++;
+                    }
                     const code = character_zh_table_invert[char];
                     const data = getByteDataByCharCode(code);
                     res.push(...data);
@@ -73,7 +77,7 @@ export function getByteDataByString(str: string): number[]
             }
         }
     }
-    if (escape === true) {
+    if (special === true) {
         throw "[";
     }
     return res;
