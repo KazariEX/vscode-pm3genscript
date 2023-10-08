@@ -5,14 +5,14 @@ const handlers: {
 } = {
     braille(command)
     {
-        const str = (command.params[0].value as string).slice(1, -1);
-        const data = getByteDataByBraille(str);
-        data.push(0xFF);
         try {
+            const str = (command.params[0].value as string).slice(1, -1);
+            const data = getByteDataByBraille(str);
+            data.push(0xFF);
             return [data];
         }
-        catch (err) {
-            throw new Error(`不在盲文表内的字符，位于行 ${command.location.startLine}。`);
+        catch (char) {
+            throw new Error(`字符 "${char}" 不在盲文表内，位于行 ${command.location.startLine}。`);
         }
     },
     raw(command, res)
@@ -29,10 +29,15 @@ const handlers: {
     },
     ["="](command)
     {
-        const str = (command.params[0].value as string).slice(1, -1);
-        const data = getByteDataByString(str);
-        data.push(0x02);
-        return [data];
+        try {
+            const str = (command.params[0].value as string).slice(1, -1);
+            const data = getByteDataByString(str);
+            data.push(0xFF);
+            return [data];
+        }
+        catch (char) {
+            throw new Error(`字符 "${char}" 不在字符表内，位于行 ${command.location.startLine}。`);
+        }
     }
 };
 

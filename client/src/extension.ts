@@ -9,14 +9,11 @@ import {
 import pm3genHoverProvider from "./features/hoverProvider";
 import pm3genSignatureHelpProvider from "./features/signatureHelpProvider";
 import { macros, commands } from "./data";
-import { arrayToHexString, numberToHexString } from "./utils";
+import { arrayToHexString, getConfiguration, numberToHexString } from "./utils";
 import { GBA } from "./gba";
 
 //语言ID
 const languageId = "pm3genscript";
-
-//ROM文件
-const gba = new GBA();
 
 //客户端
 let client: LanguageClient;
@@ -48,13 +45,9 @@ export function activate(context: vscode.ExtensionContext)
 
     //命令：编译
     const command1 = vscode.commands.registerCommand(`${languageId}.compile`, async () => {
-        const res = await sendCompileRequire();
+        try {
+            const res = await sendCompileRequire();
 
-        if (res.error) {
-            vscode.window.showErrorMessage("编译失败：" + res.error);
-        }
-        else {
-            vscode.window.showInformationMessage("编译成功！");
             outputChannel.clear();
             outputChannel.show();
 
@@ -69,27 +62,35 @@ export function activate(context: vscode.ExtensionContext)
                 const title = block.dynamicName ?? numberToHexString(block.offset);
                 return `${title} [${block.length}]\n` + arrayToHexString(block.data.flat(2));
             }).join("\n\n"));
+
+            vscode.window.showInformationMessage("编译成功！");
+        }
+        catch (err) {
+            vscode.window.showErrorMessage("编译失败：" + err);
         }
     });
 
     //命令：写入
-    const command2 = vscode.commands.registerCommand(`${languageId}.write`, async () => {
-        const res = await sendCompileRequire();
+    const command2 = vscode.commands.registerCommand(`${languageId}.write`, async (uri: vscode.Uri) => {
+        try {
+            const res = await sendCompileRequire();
 
-        if (res.error) {
-            vscode.window.showErrorMessage("编译失败：" + res.error);
-        }
-        else {
             try {
-                if (gba.filename === null) {
-                    const filename = await openGBAFile();
-                    if (!(gba.filename = filename)) {
-                        throw "请打开正确的文件！";
-                    }
+                let filename = "";
+                if (uri.scheme === "untitled") {
+                    filename = await openGBAFile();
                 }
+                else {
+                    const {
+                        conf,
+                        dir
+                    } = getConfiguration(uri.fsPath);
+                    filename = path.join(dir, conf.rom);
+                }
+
+                const gba = new GBA(filename);
                 await gba.write(res);
 
-                vscode.window.showInformationMessage("写入成功！");
                 outputChannel.clear();
                 outputChannel.show();
 
@@ -107,10 +108,15 @@ export function activate(context: vscode.ExtensionContext)
                     }
                     return `${title} [${block.length}]\n` + arrayToHexString(block.data.flat(2));
                 }).join("\n\n"));
+
+                vscode.window.showInformationMessage("写入成功！");
             }
             catch (err) {
                 vscode.window.showErrorMessage("写入失败：" + err);
             }
+        }
+        catch (err) {
+            vscode.window.showErrorMessage("编译失败：" + err);
         }
     });
 
@@ -172,7 +178,9 @@ async function openGBAFile(): Promise<string>
             "GameBoy Advance ROM": ["gba"]
         }
     });
-    if (!uris) return null;
+    if (!uris) {
+        throw "未选择文件。";
+    }
 
     const uri = uris[0];
     return uri.fsPath;
@@ -184,15 +192,21 @@ async function sendCompileRequire(): Promise<CompileResult>
     const { document } = vscode.window.activeTextEditor;
 
     if (document.languageId !== languageId) {
-        vscode.window.showErrorMessage("请在正确的文件下进行编译！");
-        return;
+        throw "请在正确的文件下进行编译！";
     }
 
     const content = document.getText();
-    return await client.sendRequest("compile", {
+    const res: CompileResult = await client.sendRequest("compile", {
         content,
         uri: document.uri.fsPath
     });
+
+    if (res.error) {
+        throw res.error;
+    }
+    else {
+        return res;
+    }
 }
 
 //从编译结果获取定义列表字符串

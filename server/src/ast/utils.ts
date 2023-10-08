@@ -1,6 +1,5 @@
 import { DiagnosticSeverity } from "vscode-languageserver/node";
 import { is } from "../lexer";
-import { CstNodeLocation } from "chevrotain";
 
 //根据指令对参数集进行类型校验
 export function validate(item: PTSSyntax, errors: PTSError[]): boolean
@@ -134,10 +133,4 @@ export function validateDynamicOffset(ast: AST, errors: PTSError[])
             });
         }
     });
-}
-
-//创建节点位置
-export function createLocation(startOffset: number, startLine?: number, startColumn?: number, endOffset?: number, endLine?: number, endColumn?: number): CstNodeLocation
-{
-    return { startOffset, startLine, startColumn, endOffset, endLine, endColumn };
 }

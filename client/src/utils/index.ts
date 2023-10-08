@@ -1,3 +1,6 @@
+import * as fs from "fs";
+import * as path from "path";
+
 //字符串首字母大写
 export function capitalizeFirstLetter(str: string): string
 {
@@ -34,4 +37,28 @@ export function getByteDataByPointer(offset: number): number[]
     }
 
     return res;
+}
+
+//获取项目配置
+export function getConfiguration(uri: string)
+{
+    const filename = ".pm3genrc.json";
+
+    let dir = path.dirname(uri);
+    let target = path.join(dir, filename);
+
+    while (!fs.existsSync(target)) {
+        const parentDir = path.join(dir, "../");
+        if (parentDir === dir) {
+            throw "找不到配置文件。";
+        }
+        dir = parentDir;
+        target = path.join(dir, filename);
+    }
+
+    const file = fs.readFileSync(target);
+    return {
+        conf: JSON.parse(file.toString()),
+        dir
+    };
 }

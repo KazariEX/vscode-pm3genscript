@@ -31,8 +31,6 @@ export class GBA {
                     end: startOffset + Math.max(0x1000, length * 2) - 1
                 });
 
-                console.log(freeSpaceByte);
-
                 let data: Buffer;
                 let totalLength = 0;
                 const chunks: Buffer[] = [];
@@ -47,12 +45,13 @@ export class GBA {
                 });
 
                 rs.on("end", () => {
-                    data = Buffer.concat(chunks, totalLength);
+                    rs.close();
 
+                    data = Buffer.concat(chunks, totalLength);
                     if (data.length === 0) reject("空位不足！");
 
-                    let start = 0; //起始偏移
-                    let count = 0; //空位大小
+                    let start = 0;
+                    let count = 0;
 
                     for (let i = 0; i < data.length; i++) {
                         if (data[i] === freespace) {
@@ -118,12 +117,13 @@ export class GBA {
             });
 
             ws.on("error", (err) => {
-                reject(`文件读取失败！\n${err}`);
+                reject(err);
             });
 
             ws.write(Uint8Array.from(content), (err) => {
+                ws.close();
                 if (err) {
-                    reject(`写入失败！\n${err}`);
+                    reject(err);
                 }
                 else {
                     resolve(offset);

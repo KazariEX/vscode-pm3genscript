@@ -20,8 +20,8 @@ export function check(content: TextDocument): lsp.Diagnostic[]
 
     if (lexErrors.length > 0) {
         errors.push(...lexErrors.map((e) => ({
-            severity: lsp.DiagnosticSeverity.Error,
             message: e.message,
+            severity: lsp.DiagnosticSeverity.Error,
             range: {
                 start: {
                     line: e.line - 1,
@@ -59,7 +59,7 @@ export function check(content: TextDocument): lsp.Diagnostic[]
         errors.push(...astErrors.map((e) => ({
             message: e.message,
             severity: e.serverity,
-            range: {
+            range: e.location ? {
                 start: {
                     line: e.location.startLine - 1,
                     character: e.location.startColumn - 1
@@ -67,6 +67,15 @@ export function check(content: TextDocument): lsp.Diagnostic[]
                 end: {
                     line: e.location.endLine - 1,
                     character: e.location.endColumn
+                }
+            } : {
+                start: {
+                    line: 0,
+                    character: 0
+                },
+                end: {
+                    line: 0,
+                    character: 0
                 }
             }
         })));

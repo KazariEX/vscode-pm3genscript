@@ -2,7 +2,7 @@ import { IToken, CstNode, CstNodeLocation } from "chevrotain";
 import { DiagnosticSeverity } from "vscode-languageserver";
 import * as path from "path";
 import { BasePTSVisitor } from "../parser";
-import { createLocation, typelint, validate, validateDynamicOffset } from "./utils";
+import { typelint, validate, validateDynamicOffset } from "./utils";
 import macroHandler from "./macro";
 import commandHandler from "./command";
 import { macros, commands, rawTypes } from "../data";
@@ -30,12 +30,12 @@ export class ASTVisitor extends BasePTSVisitor {
                     cmd: "include",
                     type: "macro",
                     template: macros["include"],
-                    location: createLocation(0, 1, 1, 0, 1, 1),
+                    location: null,
                     params: [{
                         style: "string",
                         type: "string",
                         value: `"${p + name}.pts"`,
-                        location: createLocation(0, 1, 1, 0, 1, 1)
+                        location: null
                     }],
                     error: false
                 }, ast, errors);
