@@ -18,17 +18,6 @@
     "watch": "tsc -b -w"
   },
   "contributes": {
-    "customEditors": [
-      {
-        "viewType": "pm3genscript.GBAEditor",
-        "displayName": "GBA Editor",
-        "selector": [
-          {
-            "filenamePattern": "*.gba"
-          }
-        ]
-      }
-    ],
     "commands": [
       {
         "command": "pm3genscript.compile",

@@ -85,7 +85,7 @@ export function activate(context: vscode.ExtensionContext)
                         conf,
                         dir
                     } = getConfiguration(uri.fsPath);
-                    filename = path.join(dir, conf.rom);
+                    filename = path.isAbsolute(conf.rom) ? conf.rom : path.join(dir, conf.rom);
                 }
 
                 const gba = new GBA(filename);
