@@ -938,7 +938,7 @@ const commands: WordData = {
         value: 0x1A,
         description: {
             en: `Sets variable B to A, but only if B is higher than zero.`,
-            zh: `将变量 B 设置为 A，当且仅当 B 的值大于 0。`
+            zh: `将变量 B 复制到 A，当且仅当 B 的值大于 0。`
         },
         bytes: 5,
         params: [

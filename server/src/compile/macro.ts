@@ -1,21 +1,26 @@
 import { getByteDataByBraille, getByteDataByLiteral, getByteDataByString } from "./utils";
 
 const handlers: {
-    [K in keyof any]: (command: ASTCommand) => number[][]
+    [K in keyof any]: (command: ASTCommand, res: CompileResult) => number[][]
 } = {
     braille(command)
     {
+        const str = (command.params[0].value as string).slice(1, -1);
+        const data = getByteDataByBraille(str);
+        data.push(0xFF);
         try {
-            return [getByteDataByBraille(command.params[0].value as string)];
+            return [data];
         }
         catch (err) {
             throw new Error(`不在盲文表内的字符，位于行 ${command.location.startLine}。`);
         }
     },
-    raw(command)
+    raw(command, res)
     {
         return command.params.map((param) => {
-            return getByteDataByLiteral(param as ASTLiteralParam);
+            return getByteDataByLiteral(param as ASTLiteralParam, {
+                autobank: res.autobank
+            });
         });
     },
     reserve(command)
@@ -24,11 +29,14 @@ const handlers: {
     },
     ["="](command)
     {
-        return [getByteDataByString(command.params[0].value as string)];
+        const str = (command.params[0].value as string).slice(1, -1);
+        const data = getByteDataByString(str);
+        data.push(0x02);
+        return [data];
     }
 };
 
-export default function(command: ASTCommand)
+export default function(command: ASTCommand, res: CompileResult)
 {
-    return handlers[command.cmd]?.(command);
+    return handlers[command.cmd]?.(command, res);
 };

@@ -1,8 +1,8 @@
 {
   "name": "vscode-pm3genscript",
   "displayName": "Pokemon 3rd Generation Script",
-  "description": "VSCode for pokemon-3rd-generation-script.",
-  "version": "0.0.1",
+  "description": "Language support for pokemon-3rd-generation-script",
+  "version": "0.0.2",
   "publisher": "KazariEX",
   "repository": "https://github.com/MysteryBao37/vscode-pm3genscript",
   "engines": {
@@ -18,6 +18,17 @@
     "watch": "tsc -b -w"
   },
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "pm3genscript.GBAEditor",
+        "displayName": "GBA Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.gba"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "pm3genscript.compile",

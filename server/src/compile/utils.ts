@@ -13,7 +13,6 @@ const braille_table_invert = invertKeyValues(braille_table);
 //从盲文表获取字节数组
 export function getByteDataByBraille(str: string): number[]
 {
-    str = str.slice(1, -1);
     return [...str].map((char) => {
         if (/[a-zA-Z]/.test(char)) {
             return Number(braille_table_invert[char.toUpperCase()]);
@@ -27,7 +26,6 @@ export function getByteDataByBraille(str: string): number[]
 //从字符串获取字节数组
 export function getByteDataByString(str: string): number[]
 {
-    str = str.slice(1, -1);
     const chars = [...str];
 
     for (let i = 0; i < chars.length; i++) {
@@ -37,15 +35,17 @@ export function getByteDataByString(str: string): number[]
 }
 
 //根据类型获取字节数组
-export function getByteDataByLiteral(param: ASTLiteralParam): number[]
+export function getByteDataByLiteral(param: ASTLiteralParam, { autobank }): number[]
 {
+    autobank ??= true;
+
     const res = [];
     const fn = (value: number) => (res.push(value % 0x100), value >> 8);
 
     let { value } = param;
     switch (param.type) {
         case "pointer":
-            if (value < 0x2000000) value += 0x8000000;
+            if (autobank && value < 0x2000000) value += 0x8000000;
         case "dword":
             value = fn(value);
             value = fn(value);

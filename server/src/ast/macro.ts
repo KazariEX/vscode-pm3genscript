@@ -13,6 +13,11 @@ const handlers: {
         const [p1, p2] = item.params;
         ast.aliases.set(p2.value, p1.value);
     },
+    autobank(item, ast, errors)
+    {
+        const [p1] = item.params;
+        ast.autobank = (p1.value === "off") ? false : true;
+    },
     braille(item, ast, errors)
     {
         const block = getCurrentBlock(item, ast, errors);
@@ -49,6 +54,38 @@ const handlers: {
     {
         const [p1] = item.params;
         ast.dynamic.offset = getLiteralValue(p1, ast, errors);
+    },
+    erase(item, ast, errors)
+    {
+        const [p1, p2] = item.params;
+        const block: ASTBlock = {
+            location: item.location
+        };
+
+        block.offset = getLiteralValue(p1, ast, errors);
+        const length = getLiteralValue(p2, ast, errors);
+        if (length > 0) {
+            const freeSpaceByte = ast.freeSpaceByte ?? 0xFF;
+            block.data = new Array(length).fill(freeSpaceByte);
+
+            ast.blocks.push(block);
+        }
+    },
+    eraserange(item, ast, errors)
+    {
+        const [p1, p2] = item.params;
+        const block: ASTBlock = {
+            location: item.location
+        };
+
+        block.offset = getLiteralValue(p1, ast, errors);
+        const length = getLiteralValue(p2, ast, errors) - block.offset;
+        if (length > 0) {
+            const freeSpaceByte = ast.freeSpaceByte ?? 0xFF;
+            block.data = new Array(length).fill(freeSpaceByte);
+
+            ast.blocks.push(block);
+        }
     },
     freespace(item, ast, errors)
     {
@@ -88,6 +125,9 @@ const handlers: {
                     //合并提升宏
                     ast.aliases = new Map([...ast.aliases, ...subAst.aliases]);
                     ast.defines = new Map([...ast.defines, ...subAst.defines]);
+                    if (subAst.autobank !== null) {
+                        ast.autobank = subAst.autobank;
+                    }
                     if (subAst.displayDefineList !== null) {
                         ast.displayDefineList = subAst.displayDefineList;
                     }

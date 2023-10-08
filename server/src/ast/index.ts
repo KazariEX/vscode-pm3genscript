@@ -23,6 +23,7 @@ function cst2ast(cstNode: CstNode, extra: ASTExtra)
     const ast: AST = {
         aliases: new Map(),
         defines: new Map(),
+        autobank: null,
         displayDefineList: null,
         dynamic: {
             collection: {

@@ -22,17 +22,23 @@ export default class pm3genSignatureHelpProvider implements SignatureHelpProvide
         let p = -1;
 
         const match = text.match(/((?:\*\/|^)\s*([#0-9a-z=]+))(\s+.*)/);
-        const fullKey = match?.[2];
+        const fullWord = match?.[2];
 
-        let key = fullKey;
-        if (key.startsWith("#")) {
-            key = key.substring(1);
+        let word = fullWord;
+        if (word.startsWith("#")) {
+            word = word.substring(1);
         }
-        else if (key in macros && key !== "=") {
+        else if (word in macros && word !== "=") {
             return null;
         }
 
-        if (key in all) {
+        if (word in all) {
+            //重定向
+            const { redirect } = all[word];
+            if (redirect) {
+                word = redirect;
+            }
+
             c += match[1].length;
             if (char <= c) {
                 return null;
@@ -50,11 +56,11 @@ export default class pm3genSignatureHelpProvider implements SignatureHelpProvide
             return null;
         }
 
-        const signatureInfo = new SignatureInformation(fullKey + " " + all[key].params.map((item) => {
+        const signatureInfo = new SignatureInformation(fullWord + " " + all[word].params.map((item) => {
             return `[${item.name}]`;
-        }).join(" "), new MarkdownString(all[key].description.zh?.trim()));
+        }).join(" "), new MarkdownString(all[word].description.zh?.trim()));
 
-        signatureInfo.parameters.push(...all[key].params.map((item) => {
+        signatureInfo.parameters.push(...all[word].params.map((item) => {
             let type = "";
             if (typeof item.type === "string") {
                 type = capitalizeFirstLetter(item.type);

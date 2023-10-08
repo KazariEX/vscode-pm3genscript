@@ -15,36 +15,32 @@ import { GBA } from "./gba";
 //语言ID
 const languageId = "pm3genscript";
 
-//客户端
-let client: LanguageClient;
-
 //ROM文件
 const gba = new GBA();
 
+//客户端
+let client: LanguageClient;
+
 export function activate(context: vscode.ExtensionContext)
 {
-    //连接语言服务器
     const serverModule = context.asAbsolutePath(path.join("server", "out", "server.js"));
-
     const serverOptions: ServerOptions = {
-        run: { module: serverModule, transport: TransportKind.ipc },
+        run: {
+            module: serverModule,
+            transport: TransportKind.ipc
+        },
         debug: {
             module: serverModule,
             transport: TransportKind.ipc,
             options: { execArgv: ["--nolazy", "--inspect=6009"] }
         }
     };
-
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: "file", language: languageId }]
     };
 
-    client = new LanguageClient(
-        "PM3GenScript Language Server",
-        serverOptions,
-        clientOptions
-    );
-
+    //连接语言服务器
+    client = new LanguageClient("PM3GenScript Language Server", serverOptions, clientOptions);
     client.start();
 
     //输出频道
@@ -55,25 +51,24 @@ export function activate(context: vscode.ExtensionContext)
         const res = await sendCompileRequire();
 
         if (res.error) {
-            vscode.window.showErrorMessage(`编译失败：${res.error}`);
+            vscode.window.showErrorMessage("编译失败：" + res.error);
         }
         else {
-            vscode.window.showInformationMessage(`编译成功！`);
+            vscode.window.showInformationMessage("编译成功！");
             outputChannel.clear();
             outputChannel.show();
 
             //定义列表
             const definelist = getDefineListString(res);
             if (definelist !== null) {
-                outputChannel.appendLine(definelist);
+                outputChannel.appendLine(definelist + "\n");
             }
 
             //脚本块
-            res.blocks.forEach((block) => {
+            outputChannel.appendLine(res.blocks.map((block) => {
                 const title = block.dynamicName ?? numberToHexString(block.offset);
-                outputChannel.appendLine(`\n${title} [${block.length}]`);
-                outputChannel.appendLine(arrayToHexString(block.data.flat(2)));
-            });
+                return `${title} [${block.length}]\n` + arrayToHexString(block.data.flat(2));
+            }).join("\n\n"));
         }
     });
 
@@ -82,14 +77,14 @@ export function activate(context: vscode.ExtensionContext)
         const res = await sendCompileRequire();
 
         if (res.error) {
-            vscode.window.showErrorMessage(`编译失败：${res.error}`);
+            vscode.window.showErrorMessage("编译失败：" + res.error);
         }
         else {
             try {
                 if (gba.filename === null) {
                     const filename = await openGBAFile();
                     if (!(gba.filename = filename)) {
-                        throw `请打开正确的文件！`;
+                        throw "请打开正确的文件！";
                     }
                 }
                 await gba.write(res);
@@ -101,21 +96,20 @@ export function activate(context: vscode.ExtensionContext)
                 //定义列表
                 const definelist = getDefineListString(res);
                 if (definelist !== null) {
-                    outputChannel.appendLine(definelist);
+                    outputChannel.appendLine(definelist + "\n");
                 }
 
                 //脚本块
-                res.blocks.forEach((block) => {
+                outputChannel.appendLine(res.blocks.map((block) => {
                     let title = numberToHexString(block.offset);
                     if (block.dynamicName) {
                         title = `${block.dynamicName} => ${title}`;
                     }
-                    outputChannel.appendLine(`\n${title} [${block.length}]`);
-                    outputChannel.appendLine(arrayToHexString(block.data.flat(2)));
-                });
+                    return `${title} [${block.length}]\n` + arrayToHexString(block.data.flat(2));
+                }).join("\n\n"));
             }
             catch (err) {
-                vscode.window.showErrorMessage(`写入失败：${err}`);
+                vscode.window.showErrorMessage("写入失败：" + err);
             }
         }
     });
@@ -196,7 +190,8 @@ async function sendCompileRequire(): Promise<CompileResult>
 
     const content = document.getText();
     return await client.sendRequest("compile", {
-        content
+        content,
+        uri: document.uri.fsPath
     });
 }
 

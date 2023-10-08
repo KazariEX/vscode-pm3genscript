@@ -12,6 +12,7 @@ declare global {
     interface AST {
         aliases: Map<string, string>,
         defines: Map<string, number>,
+        autobank: boolean,
         displayDefineList: boolean,
         dynamic: {
             collection: {
@@ -32,7 +33,8 @@ declare global {
     interface ASTBlock extends WithLocation {
         dynamicName?: string,
         offset?: number,
-        commands: ASTCommand[]
+        commands?: ASTCommand[],
+        data?: number[]
     }
 
     interface ASTCommand extends WithLocation {
@@ -62,6 +64,7 @@ declare global {
     }
 
     interface CompileResult {
+        autobank: boolean,
         blocks: CompileBlock[],
         defines: {
             [x: string]: number

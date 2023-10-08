@@ -14,7 +14,9 @@ export default function(command: ASTCommand, i: number, j: number, res: CompileR
             return [ 0, 0, 0, 0 ];
         }
         else {
-            return getByteDataByLiteral(param as ASTLiteralParam);
+            return getByteDataByLiteral(param as ASTLiteralParam, {
+                autobank: res.autobank
+            });
         }
     })];
 }

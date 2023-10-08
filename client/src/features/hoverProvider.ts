@@ -19,14 +19,16 @@ export default class pm3genHoverProvider implements HoverProvider {
             const entity = macros[word];
 
             //标题
+            let suffix = "";
             const { alias } = entity;
             if (alias?.length > 0) {
-                contents.push(`**#${word}** (alias:${alias.map((item) => ` #${item}`).join(",")})`);
+                suffix = ` (alias:${alias.map((item) => ` #${item}`).join(",")})`;
             }
+            contents.push(`**#${word}**${suffix}`);
 
             //功能
             contents.push(entity.description.en, entity.description.zh);
-            
+
             //参数
             const syntax = `
             \n语法：
@@ -42,6 +44,12 @@ export default class pm3genHoverProvider implements HoverProvider {
             contents.push(syntax, example);
         }
         else if (word in commands) {
+            //重定向
+            const { redirect } = commands[word];
+            if (redirect) {
+                word = redirect;
+            }
+
             //数据对象
             const entity = commands[word];
 

@@ -13,15 +13,15 @@
 
 编译器宏：
 - [x] alias
-- [ ] autobank
+- [x] autobank
 - [x] braille
 - [x] break
 - [ ] clean
 - [x] define
 - [x] definelist
 - [x] dynamic
-- [ ] erase
-- [ ] eraserange
+- [x] erase
+- [x] eraserange
 - [x] freespace
 - [x] include
 - [x] org
