@@ -9,7 +9,7 @@ import {
 import pm3genHoverProvider from "./features/hoverProvider";
 import pm3genSignatureHelpProvider from "./features/signatureHelpProvider";
 import { macros, commands } from "./data";
-import { arrayToHexString, getConfiguration, numberToHexString } from "./utils";
+import { arrayToHexString, numberToHexString } from "./utils";
 import { GBA } from "./gba";
 
 //语言ID
@@ -18,6 +18,7 @@ const languageId = "pm3genscript";
 //客户端
 let client: LanguageClient;
 
+//扩展激活时
 export function activate(context: vscode.ExtensionContext)
 {
     const serverModule = context.asAbsolutePath(path.join("server", "out", "server.js"));
@@ -76,19 +77,7 @@ export function activate(context: vscode.ExtensionContext)
             const res = await sendCompileRequire();
 
             try {
-                let filename = "";
-                if (uri.scheme === "untitled") {
-                    filename = await openGBAFile();
-                }
-                else {
-                    const {
-                        conf,
-                        dir
-                    } = getConfiguration(uri.fsPath);
-                    filename = path.isAbsolute(conf.rom) ? conf.rom : path.join(dir, conf.rom);
-                }
-
-                const gba = new GBA(filename);
+                const gba = await GBA.open(uri);
                 await gba.write(res);
 
                 outputChannel.clear();
@@ -117,6 +106,32 @@ export function activate(context: vscode.ExtensionContext)
         }
         catch (err) {
             vscode.window.showErrorMessage("编译失败：" + err);
+        }
+    });
+
+    //命令：反编译
+    const command3 = vscode.commands.registerCommand(`${languageId}.decompile`, async (uri: vscode.Uri) => {
+        try {
+            const gba = await GBA.open(uri);
+
+            const input = await vscode.window.showInputBox({
+                placeHolder: "请输入反编译地址(0x)……"
+            });
+            const offset = Number(`0x${input}`);
+
+            if (offset) {
+                const res = await gba.decompile(offset);
+
+                const td = await vscode.workspace.openTextDocument({
+                    content: res.plaintext,
+                    language: languageId
+                });
+                vscode.window.showTextDocument(td);
+                vscode.window.showInformationMessage("反编译成功！");
+            }
+        }
+        catch (err) {
+            vscode.window.showErrorMessage("反编译失败：" + err);
         }
     });
 
@@ -158,32 +173,15 @@ export function activate(context: vscode.ExtensionContext)
     const provider4 = vscode.languages.registerSignatureHelpProvider(languageId, new pm3genSignatureHelpProvider(), " ");
 
     //写入上下文
-    context.subscriptions.push(command1, command2, provider1, provider2, provider3, provider4);
+    context.subscriptions.push(command1, command2, command3, provider1, provider2, provider3, provider4);
 }
 
+//扩展停用时
 export function deactivate()
 {
     if (client) {
         return client.stop();
     }
-}
-
-//打开GBA文件
-async function openGBAFile(): Promise<string>
-{
-    const uris = await vscode.window.showOpenDialog({
-        canSelectFiles: true,
-        openLabel: `打开 ROM`,
-        filters: {
-            "GameBoy Advance ROM": ["gba"]
-        }
-    });
-    if (!uris) {
-        throw "未选择文件。";
-    }
-
-    const uri = uris[0];
-    return uri.fsPath;
 }
 
 //发送编译请求

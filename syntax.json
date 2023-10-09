@@ -84,7 +84,11 @@
 					{
 						"name": "constant.character.escape",
 						"match": "\\\\."
-					}
+					},
+          {
+            "name": "constant.character.escape",
+            "match": "\\[.*\\]"
+          }
 				]
 			}]
 		},

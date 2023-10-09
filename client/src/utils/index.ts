@@ -26,17 +26,43 @@ export function numberToHexString(value: Number): string
     return `0x${value.toString(16).toUpperCase()}`;
 }
 
-//指针转十六进制数组
-export function getByteDataByPointer(offset: number): number[]
+//指针转字节数组
+export function getByteArrayByPointer(offset: number, autobank?: boolean): number[]
 {
-    const res = [];
+    autobank ??= true;
+    if (autobank && offset < 0x2000000) offset += 0x8000000;
 
-    if (offset < 0x2000000) offset += 0x8000000;
+    const res = [];
     for (let i = 0; i < 4; i++, offset >>= 8) {
         res.push(offset % 0x100);
     }
-
     return res;
+}
+
+//获取参数类型对应的字节长度
+export function getLengthByParamType(type: string): number
+{
+    switch (type) {
+        case "byte": return 1;
+        case "word": return 2;
+        case "dword": return 4;
+        case "pointer": return 4;
+        default: return 0;
+    }
+}
+
+//字节数组转数字
+export function getValueByByteArray(arr: Buffer)
+{
+    return arr.reduce((res, byte, i) => {
+        return res + byte * Math.pow(0x100, i);
+    }, 0);
+}
+
+//去除偏移存储体
+export function removeMemoryBank(offset: number)
+{
+    return offset >= 0x8000000 ? offset - 0x8000000 : offset;
 }
 
 //获取项目配置

@@ -1,20 +1,58 @@
 import * as fs from "fs";
-import { getByteDataByPointer } from "../utils";
+import * as path from "path";
+import * as vscode from "vscode";
+import { Buffer } from "node:buffer";
+import Decompiler from "./decompiler";
+import { getByteArrayByPointer, getConfiguration, removeMemoryBank } from "../utils";
 
 export class GBA {
     filename: string;
 
-    constructor(filename: string = null)
+    constructor(filename?: string)
     {
         this.filename = filename;
+    }
+
+    //打开ROM，返回GBA实例
+    static async open(relatedUri: vscode.Uri): Promise<GBA>
+    {
+        //默认为当前活跃文本编辑器的URI
+        relatedUri ??= vscode.window.activeTextEditor.document.uri;
+
+        let filename = "";
+        if (relatedUri?.scheme === "file") {
+            const { fsPath } = relatedUri;
+            if (path.extname(fsPath) === "gba") {
+                filename = fsPath;
+            }
+            else {
+                const { conf, dir } = getConfiguration(relatedUri.fsPath);
+                filename = path.isAbsolute(conf.rom) ? conf.rom : path.join(dir, conf.rom);
+            }
+        }
+
+        if (!fs.existsSync(filename)) {
+            const uris = await vscode.window.showOpenDialog({
+                canSelectFiles: true,
+                openLabel: `打开 ROM`,
+                filters: {
+                    "GameBoy Advance ROM": ["gba"]
+                }
+            });
+            if (!uris) {
+                throw "未选择文件。";
+            }
+            filename = uris[0].fsPath;
+        }
+        return new GBA(filename);
     }
 
     //寻找空位
     findFreeSpace(startOffset: number, length: number, freeSpaceByte: number = 0xFF): Promise<number>
     {
-        return new Promise((resolve, reject) => {
-            const filename = this.filename;
+        const { filename } = this;
 
+        return new Promise((resolve, reject) => {
             //空位限定
             let freespace = freeSpaceByte;
             if (![0x00, 0xFF].includes(freeSpaceByte)) {
@@ -94,7 +132,7 @@ export class GBA {
         //补全动态偏移参数
         for (const name in res.dynamic.collection) {
             const offset = dynamicMap[name];
-            const data = getByteDataByPointer(offset);
+            const data = getByteArrayByPointer(offset, res.autobank);
 
             res.dynamic.collection[name].forEach(([i, j, k]) => {
                 res.blocks[i].data[j][k] = data;
@@ -108,8 +146,10 @@ export class GBA {
     }
 
     //写入单组数据
-    private async writeByOffset(offset: number, content: number[])
+    private writeByOffset(offset: number, content: number[])
     {
+        offset = removeMemoryBank(offset);
+        if (offset >= 0x8000000) offset -= 0x8000000;
         return new Promise((resolve, reject) => {
             const ws = fs.createWriteStream(this.filename, {
                 start: offset,
@@ -130,5 +170,12 @@ export class GBA {
                 }
             });
         });
+    }
+
+    //反编译
+    async decompile(offset: number): Promise<DecompileResult>
+    {
+        const decompiler = new Decompiler(this.filename);
+        return await decompiler.exec(offset);
     }
 }

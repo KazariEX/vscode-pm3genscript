@@ -2,11 +2,11 @@
   "name": "vscode-pm3genscript",
   "displayName": "Pokemon 3rd Generation Script",
   "description": "Language support for pokemon-3rd-generation-script",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "KazariEX",
   "repository": "https://github.com/MysteryBao37/vscode-pm3genscript",
   "engines": {
-    "vscode": "^1.82.0"
+    "vscode": "^1.83.0"
   },
   "categories": [
     "Programming Languages"
@@ -87,14 +87,16 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^20.8.3",
+    "@types/lodash": "^4.14.199",
+    "@types/node": "^20.8.4",
     "@types/vscode": "^1.83.0",
-    "@typescript-eslint/eslint-plugin": "^6.7.4",
-    "@typescript-eslint/parser": "^6.7.4",
+    "@typescript-eslint/eslint-plugin": "^6.7.5",
+    "@typescript-eslint/parser": "^6.7.5",
     "eslint": "^8.51.0"
   },
   "dependencies": {
     "chevrotain": "^11.0.3",
+    "lodash": "^4.17.21",
     "yaml": "^2.3.2"
   }
 }

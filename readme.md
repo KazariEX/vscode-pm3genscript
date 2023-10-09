@@ -10,7 +10,7 @@
 
 新建一个文件，选择指定的语言模式并编写脚本；在文本编辑框区域打开右键菜单，调用「编译」或「写入」功能。
 
-当文件未保存时，使用「写入」功能将打开一个本地文件选择框，选择指定的 ROM 后，即可将编译后的结果写入文件。
+当文件未保存时，使用「写入」功能将打开一个文件对话框，选择指定的 ROM 后，即可将编译后的结果写入文件。
 
 ## 2. 从配置文件出发
 
@@ -22,40 +22,23 @@
 }
 ```
 
-之后，将脚本以 ``.pts`` 格式保存在配置文件所在的目录下，再使用「写入」功能。这时，扩展将自动从配置文件中寻找 ROM 并写入编译结果。
+之后，将脚本以 ``.pts`` 格式保存在配置文件所在的目录下，再使用「写入」功能。这时，扩展将自动从配置文件中寻找 ROM 并写入编译结果。如果没有找到 ROM，仍提供一个文件对话框供选择。
 
-# 进度
+## 3. 反编译
+
+在资源管理器中右键 ``.gba`` 格式的 ROM 文件，即可调用「反编译」功能。在弹出的对话框中输入偏移地址后，扩展将在新的文本文档中显示反编译结果。
+
+# 正在实现的
 
 功能：
-- [x] 编译
-- [ ] 反编译
-- [x] 写入
+- 与 Advance Map 对接
 
 编译器宏：
-- [x] alias
-- [x] autobank
-- [x] braille
-- [x] break
-- [ ] clean
-- [x] define
-- [x] definelist
-- [x] dynamic
-- [x] erase
-- [x] eraserange
-- [x] freespace
-- [x] include
-- [x] org
-- [x] raw
-- [ ] remove
-- [ ] removeall
-- [ ] removemart
-- [ ] removemove
-- [x] reserve
-- [x] unalias
-- [x] unaliasall
-- [x] undefine
-- [x] undefineall
-- [x] =
+- clean
+- remove
+- removeall
+- removemart
+- removemove
 
 # 已知的问题
 
