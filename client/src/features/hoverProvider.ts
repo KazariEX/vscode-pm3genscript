@@ -74,7 +74,7 @@ export default class pm3genHoverProvider implements HoverProvider {
             }
             else {
                 str += `
-                \n无参数要求。`
+                \n无参数要求。`;
             }
             contents.push(str);
         }

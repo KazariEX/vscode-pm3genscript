@@ -44,4 +44,4 @@ const handlers: {
 export default function(command: ASTCommand, res: CompileResult)
 {
     return handlers[command.cmd]?.(command, res);
-};
+}

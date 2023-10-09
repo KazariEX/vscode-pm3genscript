@@ -22,14 +22,14 @@ export class ASTVisitor extends BasePTSVisitor {
 
         //内置包含
         if (ast.extra.isReferenced === false) {
-            const p = path.join(require.main.path, "../data/script/");
+            const p = path.join(require.main.path, "../../data/script/");
             for (const name of [
                 "std", "stdattacks", "stditems", "stdpoke"
             ]) {
                 macroHandler({
                     cmd: "include",
                     type: "macro",
-                    template: macros["include"],
+                    template: macros.include,
                     location: null,
                     params: [{
                         style: "string",
@@ -142,7 +142,7 @@ export class ASTVisitor extends BasePTSVisitor {
         const result: PTSSyntax = {
             cmd: "raw",
             type: "macro",
-            template: macros["raw"],
+            template: macros.raw,
             location: getLocationFromToken(token),
             params: [],
             error: false
@@ -305,7 +305,7 @@ export class ASTVisitor extends BasePTSVisitor {
 function getLocationFromToken(token: IToken): CstNodeLocation
 {
     const { startColumn, startLine, startOffset, endColumn, endLine, endOffset } = token;
-	return { startColumn, startLine, startOffset, endColumn, endLine, endOffset };
+    return { startColumn, startLine, startOffset, endColumn, endLine, endOffset };
 }
 
 //检查参数的数量
@@ -340,7 +340,7 @@ function checkParamsCount({
                 endColumn: end.endColumn
             },
             serverity: DiagnosticSeverity.Error
-        })
+        });
     }
     return false;
 }

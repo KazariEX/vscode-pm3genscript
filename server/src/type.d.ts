@@ -1,6 +1,5 @@
 import { CstNodeLocation } from "chevrotain";
 import { DiagnosticSeverity } from "vscode-languageserver";
-import { WordData } from "./data";
 
 declare global {
     interface ASTVisitorParams {
@@ -94,7 +93,7 @@ declare global {
     interface PTSSyntax extends WithLocation {
         cmd: string,
         type: "macro" | "command",
-        template: WordData[any]
+        template: any,
         params: PTSParam[],
         error: boolean
     }

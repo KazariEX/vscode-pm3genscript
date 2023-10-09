@@ -319,7 +319,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             ]
         });
     }
-};
+}
 
 function paramHandler(param: PTSParam, ast: AST, errors: PTSError[]): ASTDynamicParam | ASTLiteralParam
 {

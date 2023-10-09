@@ -20,7 +20,7 @@ export type MacroData = {
                 dynamic?: boolean,
                 symbol?: boolean
             }
-        }>,
+        }>
     }
 };
 
@@ -99,7 +99,7 @@ const macros: MacroData = {
         example: {
             value: "#braille \"ABC\"",
             description: `字符串 "ABC" 将在被转换为盲文后写入 ROM。`
-        },
+        }
     },
     "break": {
         alias: ["stop"],
@@ -446,7 +446,7 @@ const macros: MacroData = {
         hoisting: true,
         example: {
             value: "#unaliasall"
-        },
+        }
     },
     "undefine": {
         alias: ["deconst"],
@@ -512,7 +512,7 @@ const commands: CommandData = {
             {
                 name: "goto | call",
                 type: "command",
-                description: "Command Type",
+                description: "Command Type"
             },
             {
                 name: "offset",
@@ -683,7 +683,7 @@ const commands: CommandData = {
                 type: "byte",
                 description: "Function # to jump to"
             }
-        ],
+        ]
     },
     "callstdif": {
         value: 0x0B,
@@ -4790,9 +4790,10 @@ const commands: CommandData = {
             }
         ]
     }
-}
+};
 
 export {
     macros,
     commands,
-    rawTy
+    rawTypes
+};

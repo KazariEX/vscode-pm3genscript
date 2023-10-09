@@ -13,7 +13,7 @@ class PTSParser extends CstParser {
             { ALT: () => this.SUBRULE(this.macro) },
             { ALT: () => this.SUBRULE(this.raw) },
             { ALT: () => this.SUBRULE(this.command) },
-            { ALT: () => this.SUBRULE(this.if0)}
+            { ALT: () => this.SUBRULE(this.if0) }
         ]));
     });
 

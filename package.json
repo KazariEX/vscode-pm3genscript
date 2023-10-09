@@ -15,7 +15,8 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -b",
-    "watch": "tsc -b -w"
+    "watch": "tsc -b -w",
+    "lint": "eslint **/src/**/*.ts"
   },
   "contributes": {
     "commands": [
@@ -28,6 +29,11 @@
         "command": "pm3genscript.write",
         "category": "PM3GenScript",
         "title": "写入"
+      },
+      {
+        "command": "pm3genscript.decompile",
+        "category": "PM3GenScript",
+        "title": "反编译"
       }
     ],
     "menus": {
@@ -43,6 +49,14 @@
           "command": "pm3genscript.write",
           "group": "pm3genscript",
           "title": "写入"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .gba",
+          "command": "pm3genscript.decompile",
+          "group": "pm3genscript",
+          "title": "反编译"
         }
       ]
     },
@@ -73,10 +87,14 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^20.8.2",
-    "@types/vscode": "^1.82.0"
+    "@types/node": "^20.8.3",
+    "@types/vscode": "^1.83.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "@typescript-eslint/parser": "^6.7.4",
+    "eslint": "^8.51.0"
   },
   "dependencies": {
-    "chevrotain": "^11.0.3"
+    "chevrotain": "^11.0.3",
+    "yaml": "^2.3.2"
   }
 }

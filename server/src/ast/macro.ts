@@ -31,7 +31,7 @@ const handlers: {
                 return {
                     style: "string",
                     type: "string",
-                    value: param.value ,
+                    value: param.value,
                     location: param.location
                 };
             })
@@ -261,4 +261,4 @@ const handlers: {
 export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
 {
     return handlers[item.cmd]?.(item, ast, errors);
-};
+}

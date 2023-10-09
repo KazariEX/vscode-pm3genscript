@@ -2,11 +2,9 @@ import * as fs from "fs";
 import * as path from "path";
 import * as YAML from "yaml";
 
-const character_en_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../data/table/character_en.yaml"), "utf8"));
-const character_zh_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../data/table/character_zh.yaml"), "utf8"));
-const braille_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../data/table/braille.yaml"), "utf8"));
+const character_zh_table = YAML.parse(fs.readFileSync(path.join(require.main.path, "../../data/table/character_zh.yaml"), "utf8"));
+const braille_table = YAML.parse(fs.readFileSync(path.join(require.main.path, "../../data/table/braille.yaml"), "utf8"));
 
-const character_en_table_invert = invertKeyValues(character_en_table);
 const character_zh_table_invert = invertKeyValues(character_zh_table);
 const braille_table_invert = invertKeyValues(braille_table);
 
@@ -122,7 +120,6 @@ function getByteDataByCharCode(code: number): number[]
     do {
         res.unshift(code % 0x100);
         code >>= 8;
-        if (code === 0) break;
     }
     while (code > 0);
     return res;
