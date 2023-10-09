@@ -1,9 +1,8 @@
 type ParamType = "byte" | "word" | "dword" | "pointer" | "literal" | "string" | "symbol" | "command";
 
-export type WordData = {
+export type MacroData = {
     readonly [key: string]: {
         alias?: string[],
-        bytes?: number,
         description?: {
             [key in "en" | "zh"]?: string
         },
@@ -17,19 +16,34 @@ export type WordData = {
             name: string,
             enum?: any[],
             type?: ParamType | ParamType[],
-            description?: string,
             can?: {
                 dynamic?: boolean,
                 symbol?: boolean
             }
         }>,
-        value?: number,
+    }
+};
+
+export type CommandData = {
+    readonly [key: string]: {
+        bytes?: number,
+        description?: {
+            [key in "en" | "zh"]?: string
+        },
+        ending?: Boolean,
+        redirect?: string,
+        params?: Array<{
+            name: string,
+            type?: ParamType,
+            description?: string
+        }>,
+        value?: number
     }
 };
 
 const rawTypes = ["byte", "b", "char", "word", "i", "int", "integer", "dword", "l", "long", "pointer", "p", "ptr"];
 
-const macros: WordData = {
+const macros: MacroData = {
     "alias": {
         description: {
             zh: `设置在编译脚本时使用的替换符号。`
@@ -480,7 +494,7 @@ const macros: WordData = {
     }
 };
 
-const commands: WordData = {
+const commands: CommandData = {
     "if": {
         description: {
             zh: `
@@ -529,21 +543,27 @@ const commands: WordData = {
             en: `Ends the execution of the script.`,
             zh: `结束脚本的执行。`
         },
-        bytes: 1
+        bytes: 1,
+        ending: true
     },
     "return": {
         value: 0x03,
         description: {
             en: `Pops back to the last calling command used.`,
-            zh: `返回上次使用的 call 命令。`
+            zh: `
+            \n返回上次执行 call 指令的位置继续执行脚本。
+            \n如果找不到上次执行的 call 指令，则相当于 end。`
         },
-        bytes: 1
+        bytes: 1,
+        ending: true
     },
     "call": {
         value: 0x04,
         description: {
             en: `Continues script execution from another point. Can be returned to.`,
-            zh: `跳转到另一个偏移执行脚本。可以被 return 命令返回。`
+            zh: `
+            \n跳转到另一个地址执行脚本。可以被 return 命令返回。
+            \n当一段脚本里 call 指令的执行超过 20 次后，再次执行则相当于 goto。`
         },
         bytes: 5,
         params: [
@@ -558,9 +578,10 @@ const commands: WordData = {
         value: 0x05,
         description: {
             en: `Continues script execution from another point.`,
-            zh: `跳转到另一个偏移执行脚本。不能被 return 命令返回。`
+            zh: `跳转到另一个地址执行脚本。不能被 return 命令返回。`
         },
         bytes: 5,
+        ending: true,
         params: [
             {
                 name: "offset",
@@ -574,7 +595,7 @@ const commands: WordData = {
         description: {
             en: `If the last comparison returned a certain value, jumps to another script.`,
             zh: `
-            \n如果最后一次比较返回了某个值，则跳转到另一个脚本。
+            \n如果最后一次比较的结果符合条件，则使用 goto 跳转到另一个地址执行脚本。
             \n相当于 if ... goto ...`
         },
         bytes: 6,
@@ -596,7 +617,7 @@ const commands: WordData = {
         description: {
             en: `Calling version of the if command.`,
             zh: `
-            \nif 命令的 calling 版本。
+            \n如果最后一次比较的结果符合条件，则使用 call 跳转到另一个地址执行脚本。
             \n相当于 if ... call ...`
         },
         bytes: 6,
@@ -617,9 +638,10 @@ const commands: WordData = {
         value: 0x08,
         description: {
             en: `Jumps to a built-in function.`,
-            zh: `跳转到内置函数。`
+            zh: `使用 goto 跳转到内置脚本函数。`
         },
         bytes: 2,
+        ending: true,
         params: [
             {
                 name: "function",
@@ -632,7 +654,7 @@ const commands: WordData = {
         value: 0x09,
         description: {
             en: `Calls a built-in function.`,
-            zh: `调用内置函数。`
+            zh: `使用 call 跳转到内置脚本函数。`
         },
         bytes: 2,
         params: [
@@ -647,7 +669,7 @@ const commands: WordData = {
         value: 0x0A,
         description: {
             en: `Jumps to a built-in function, conditional version.`,
-            zh: `跳转到内置函数的条件版本。`
+            zh: `如果最后一次比较的结果符合条件，则使用 goto 跳转到内置脚本函数。`
         },
         bytes: 3,
         params: [
@@ -667,7 +689,7 @@ const commands: WordData = {
         value: 0x0B,
         description: {
             en: `Calls a built-in function, conditional version.`,
-            zh: `调用内置函数的条件版本。`
+            zh: `如果最后一次比较的结果符合条件，则使用 call 跳转到内置脚本函数。`
         },
         bytes: 3,
         params: [
@@ -687,7 +709,9 @@ const commands: WordData = {
         value: 0x0C,
         description: {
             en: `Jumps to a default RAM location, executing the script stored there.`,
-            zh: `跳转到默认的 RAM 位置，执行存储在那里的脚本。`
+            zh: `
+            \n读取默认 RAM 地址记录的脚本地址并执行。
+            \n绿宝石为 0x020375C0，火红为 0x020370A4。`
         },
         bytes: 1
     },
@@ -695,15 +719,16 @@ const commands: WordData = {
         value: 0x0D,
         description: {
             en: `Kills the script and resets the script RAM.`,
-            zh: `杀死脚本并重置脚本 RAM。`
+            zh: `停止脚本的执行，并清除脚本 RAM 的记录。`
         },
-        bytes: 1
+        bytes: 1,
+        ending: true
     },
     "setbyte": {
         value: 0x0E,
         description: {
             en: `Sets a predefined address to the specified byte value.`,
-            zh: `将预定义地址设置为指定的字节值。`
+            zh: `向预设的 RAM 地址写入指定的字节值。`
         },
         bytes: 2,
         params: [
@@ -738,7 +763,7 @@ const commands: WordData = {
         value: 0x10,
         description: {
             en: `Sets a memory bank to the specified byte value.`,
-            zh: `将一个内存存储体设置为指定的字节值。`
+            zh: `向指定脚本缓存库写入指定的字节值。`
         },
         bytes: 3,
         params: [
@@ -758,7 +783,7 @@ const commands: WordData = {
         value: 0x11,
         description: {
             en: `Sets the byte at the spedified offset to a certain value.`,
-            zh: `将指定偏移量处的字节设置为指定值。`
+            zh: `向指定 RAM 地址写入指定的字节值。`
         },
         bytes: 6,
         params: [
@@ -778,7 +803,7 @@ const commands: WordData = {
         value: 0x12,
         description: {
             en: `Loads the byte found at a pointer into the script RAM so other commands can use it.`,
-            zh: `将在指针处找到的字节加载到脚本 RAM 中，以便其他命令可以使用它。`
+            zh: `将在指针处找到的字节值加载到脚本缓存库中，以便其他命令可以使用它。`
         },
         bytes: 6,
         params: [
@@ -798,7 +823,7 @@ const commands: WordData = {
         value: 0x13,
         description: {
             en: `Sets the byte into a specified pointer.`,
-            zh: `将内存存储体中的字节写入指定的指针处。`
+            zh: `将指定脚本缓存库中的字节值写入指定的 RAM 地址中。`
         },
         bytes: 6,
         params: [
@@ -818,7 +843,7 @@ const commands: WordData = {
         value: 0x14,
         description: {
             en: `Copies one script bank to another.`,
-            zh: `将一个脚本存储体复制到另一个中。`
+            zh: `将源脚本缓存库的数据复制目标脚本缓存库中。`
         },
         bytes: 3,
         params: [
@@ -838,7 +863,7 @@ const commands: WordData = {
         value: 0x15,
         description: {
             en: `Copies a byte value from one place to another.`,
-            zh: `将字节值从一个位置复制到另一个位置。`
+            zh: `将源地址上的字节值复制到目标地址上。`
         },
         bytes: 9,
         params: [
@@ -858,7 +883,7 @@ const commands: WordData = {
         value: 0x16,
         description: {
             en: `Sets variable A to any value.`,
-            zh: `将变量 A 设置为任意值。`
+            zh: `将变量 A 设置为指定值。`
         },
         bytes: 5,
         params: [
@@ -878,7 +903,7 @@ const commands: WordData = {
         value: 0x17,
         description: {
             en: `Adds any value to variable A.`,
-            zh: `将任意值添加到变量 A。`
+            zh: `将指定值添加到变量 A。`
         },
         bytes: 5,
         params: [
@@ -898,7 +923,7 @@ const commands: WordData = {
         value: 0x18,
         description: {
             en: `Subtracts any value from variable A.`,
-            zh: `从变量 A 中减去任意值。`
+            zh: `从变量 A 中减去指定值。`
         },
         bytes: 5,
         params: [
@@ -918,7 +943,7 @@ const commands: WordData = {
         value: 0x19,
         description: {
             en: `Copies variable B to A.`,
-            zh: `将变量 B 复制到 A。`
+            zh: `将变量 B 的值复制到 A。`
         },
         bytes: 5,
         params: [
@@ -938,7 +963,7 @@ const commands: WordData = {
         value: 0x1A,
         description: {
             en: `Sets variable B to A, but only if B is higher than zero.`,
-            zh: `将变量 B 复制到 A，当且仅当 B 的值大于 0。`
+            zh: `将变量 B 的值复制到 A，当且仅当 B 的值大于 0。`
         },
         bytes: 5,
         params: [
@@ -958,7 +983,7 @@ const commands: WordData = {
         value: 0x1B,
         description: {
             en: `Compares two banks.`,
-            zh: `比较两个存储体。`
+            zh: `比较两个脚本缓存库的值。`
         },
         bytes: 5,
         params: [
@@ -978,7 +1003,7 @@ const commands: WordData = {
         value: 0x1C,
         description: {
             en: `Compares a variable stored in a buffer to a byte value.`,
-            zh: `将存储在缓冲区中的变量与字节值进行比较。`
+            zh: `将 <指定字节值> 与 <指定脚本缓存库的数据的低位字节值> 进行比较。`
         },
         bytes: 3,
         params: [
@@ -998,7 +1023,7 @@ const commands: WordData = {
         value: 0x1D,
         description: {
             en: `Compares a bank with a byte at some location.`,
-            zh: `将存储体与某个位置的字节进行比较。`
+            zh: `将 <指定脚本缓存库的数据的低位字节值> 与 <指定地址上的字节值> 进行比较。`
         },
         bytes: 6,
         params: [
@@ -1018,7 +1043,7 @@ const commands: WordData = {
         value: 0x1E,
         description: {
             en: `Compares a byte at some location to a buffered variable. The reverse of comparevartofarbyte.`,
-            zh: `将某个位置的字节与缓冲变量进行比较。与 comparebanktofarbyte 相反。`
+            zh: `将 <指定地址上的字节值> 与 <指定脚本缓存库的数据的低位字节值> 进行比较。与 comparebanktofarbyte 相反。`
         },
         bytes: 6,
         params: [
@@ -1038,7 +1063,7 @@ const commands: WordData = {
         value: 0x1F,
         description: {
             en: `Compares a byte at some location to a byte value.`,
-            zh: `将某个位置的字节与字节值进行比较。`
+            zh: `将 <指定地址上的字节值> 与 <指定字节值> 进行比较。`
         },
         bytes: 6,
         params: [
@@ -1058,7 +1083,7 @@ const commands: WordData = {
         value: 0x20,
         description: {
             en: `Compares a byte at some location to a byte at another location.`,
-            zh: `将某个位置的字节与另一位置的字节进行比较。`
+            zh: `比较两个地址上的字节值。`
         },
         bytes: 9,
         params: [
@@ -1078,7 +1103,7 @@ const commands: WordData = {
         value: 0x21,
         description: {
             en: `Compares variable A to a value.`,
-            zh: `将变量 A 与值进行比较。`
+            zh: `将变量 A 与指定值进行比较。`
         },
         bytes: 5,
         params: [
@@ -1098,7 +1123,7 @@ const commands: WordData = {
         value: 0x22,
         description: {
             en: `Compares two variables.`,
-            zh: `比较两个变量。`
+            zh: `比较两个变量的值。`
         },
         bytes: 5,
         params: [
@@ -1118,7 +1143,7 @@ const commands: WordData = {
         value: 0x23,
         description: {
             en: `Calls a custom ASM routine.`,
-            zh: `调用自定义 ASM 例程。`
+            zh: `调用自定义 ASM 程序。`
         },
         bytes: 5,
         params: [
@@ -1147,7 +1172,7 @@ const commands: WordData = {
         value: 0x25,
         description: {
             en: `Calls a special event.`,
-            zh: `调用特殊事件。`
+            zh: `调用特殊 ASM 函数。`
         },
         bytes: 3,
         params: [
@@ -1162,7 +1187,7 @@ const commands: WordData = {
         value: 0x26,
         description: {
             en: `Like special, but can store a returned value.`,
-            zh: `类似 special，但是可以存储返回值。`
+            zh: `调用特殊 ASM 函数，并将返回值存储到指定变量中。`
         },
         bytes: 5,
         params: [
@@ -1182,7 +1207,7 @@ const commands: WordData = {
         value: 0x27,
         description: {
             en: `Sets the script to a wait state, useful for some specials and commands.`,
-            zh: `将脚本设置为等待状态，对于某些特殊功能和命令很有用。`
+            zh: `将脚本设置为等待状态，等待前面的指令完成。`
         },
         bytes: 1
     },
@@ -1205,7 +1230,7 @@ const commands: WordData = {
         value: 0x29,
         description: {
             en: `Sets a flag for later use.`,
-            zh: `设置一个标志供以后使用。`
+            zh: `设置 flag 为存在状态。`
         },
         bytes: 3,
         params: [
@@ -1220,7 +1245,7 @@ const commands: WordData = {
         value: 0x2A,
         description: {
             en: `Clears the value of a flag.`,
-            zh: `清除标志的值。`
+            zh: `清除 flag 的存在状态。`
         },
         bytes: 3,
         params: [
@@ -1235,7 +1260,7 @@ const commands: WordData = {
         value: 0x2B,
         description: {
             en: `Checks the value of a flag.`,
-            zh: `检查标志的值。`
+            zh: `检查 flag 是否存在，并将结果存储到 LASTRESULT 中。`
         },
         bytes: 3,
         params: [
@@ -1268,7 +1293,8 @@ const commands: WordData = {
     "checkdailyflags": {
         value: 0x2D,
         description: {
-            en: `Checks the daily flags to see if any of them have been set already. but only if they were set previously, Then it dears those fags. R / S / E only.`
+            en: `Checks the daily flags to see if any of them have been set already. but only if they were set previously, Then it dears those fags. R / S / E only.`,
+            zh: `检查每日 flag。仅限宝石。`
         },
         bytes: 1
     },
@@ -1276,7 +1302,7 @@ const commands: WordData = {
         value: 0x2E,
         description: {
             en: `Resets the value of variables 0x8000, 0x8001 and 0x8002.`,
-            zh: `重置变量 0x8000，0x8001 和 0x8002 的值。`
+            zh: `重置变量 0x8000, 0x8001 和 0x8002 的值。`
         },
         bytes: 1
     },
@@ -1284,7 +1310,7 @@ const commands: WordData = {
         value: 0x2F,
         description: {
             en: `Plays a sound.`,
-            zh: `播放声音。`
+            zh: `播放提示音。`
         },
         bytes: 3,
         params: [
@@ -1299,7 +1325,7 @@ const commands: WordData = {
         value: 0x30,
         description: {
             en: `Checks if a sound, a fanfare or a song is currently being played.`,
-            zh: `检查当前是否正在播放声音、效果音或音乐。`
+            zh: `检查当前是否正在播放提示音或背景音乐。`
         },
         bytes: 1
     },
@@ -1307,7 +1333,7 @@ const commands: WordData = {
         value: 0x31,
         description: {
             en: `Plays a Sappy song as a fanfare.`,
-            zh: `播放效果音。`
+            zh: `将背景音乐放大。`
         },
         bytes: 3,
         params: [
@@ -1322,7 +1348,7 @@ const commands: WordData = {
         value: 0x32,
         description: {
             en: `Waits for fanfare to finish.`,
-            zh: `等待效果音结束。`
+            zh: `等待背景音乐放大完成。`
         },
         bytes: 1
     },
@@ -1330,7 +1356,7 @@ const commands: WordData = {
         value: 0x33,
         description: {
             en: `Switches to another Sappy song.`,
-            zh: `播放音乐。`
+            zh: `播放背景音乐。`
         },
         bytes: 4,
         params: [
@@ -1350,7 +1376,7 @@ const commands: WordData = {
         value: 0x34,
         description: {
             en: `Switches to another Sappy song.`,
-            zh: `播放音乐。`
+            zh: `记录背景音乐。`
         },
         bytes: 3,
         params: [
@@ -1365,7 +1391,7 @@ const commands: WordData = {
         value: 0x35,
         description: {
             en: `Gently fades the current music back to the map's default song.`,
-            zh: `从当前正在播放的音乐淡出至地图默认音乐。`
+            zh: `从当前背景音乐淡出，淡入至地图默认的背景音乐。`
         },
         bytes: 1
     },
@@ -1373,7 +1399,7 @@ const commands: WordData = {
         value: 0x36,
         description: {
             en: `Gently fades into another Sappy song.`,
-            zh: `从地图默认音乐淡入至指定音乐。`
+            zh: `从地图默认的背景音乐淡出，淡入至指定背景音乐。`
         },
         bytes: 3,
         params: [
@@ -1388,7 +1414,7 @@ const commands: WordData = {
         value: 0x37,
         description: {
             en: `Fades out the currently playing Sappy song.`,
-            zh: `淡出当前正在播放的音乐。`
+            zh: `从当前背景音乐淡出。`
         },
         bytes: 2,
         params: [
@@ -1403,7 +1429,7 @@ const commands: WordData = {
         value: 0x38,
         description: {
             en: `Fades the currently playing Sappy song back in.`,
-            zh: `淡入当前正在播放的音乐。`
+            zh: `重新淡入当前背景音乐。`
         },
         bytes: 2,
         params: [
@@ -1418,7 +1444,9 @@ const commands: WordData = {
         value: 0x39,
         description: {
             en: `Warps the player to another map.`,
-            zh: `跳转到另一张地图。`
+            zh: `
+            \n将玩家传送到指定地点。
+            \n出口编号设置为 0xFF 时，设置的 X / Y 坐标才会生效。`
         },
         bytes: 8,
         params: [
@@ -1453,7 +1481,7 @@ const commands: WordData = {
         value: 0x3A,
         description: {
             en: `Warps the player to another map. No sound effect.`,
-            zh: `跳转到另一张地图。无音效。`
+            zh: `将玩家传送到指定地点，但不会播放提示音。`
         },
         bytes: 8,
         params: [
@@ -1488,7 +1516,9 @@ const commands: WordData = {
         value: 0x3B,
         description: {
             en: `Warps the player to another map. Walking effect.`,
-            zh: `跳转到另一张地图。走路效果。`
+            zh: `
+            \n将玩家传送到指定地点，会先向上走一步。
+            \n如果上方有门，会触发开门动画。`
         },
         bytes: 8,
         params: [
@@ -1523,7 +1553,9 @@ const commands: WordData = {
         value: 0x3C,
         description: {
             en: `Warps the player to another map. Hole effect.`,
-            zh: `跳转到另一张地图。洞穴效果。`
+            zh: `
+            \n将玩家传送到指定地点，有从上往下坠落的效果。
+            \n坐标等于传送前的坐标，如果传送前后的两张地图宽高不一致，可能会引发 BUG。`
         },
         bytes: 3,
         params: [
@@ -1543,7 +1575,7 @@ const commands: WordData = {
         value: 0x3D,
         description: {
             en: `Warps the player to another map. Teleport effect.`,
-            zh: `跳转到另一张地图。传送效果。`
+            zh: `将玩家传送到指定地点，有上下传送并旋转的效果。`
         },
         bytes: 8,
         params: [
@@ -1578,7 +1610,7 @@ const commands: WordData = {
         value: 0x3E,
         description: {
             en: `Warps the player to another map.`,
-            zh: `跳转到另一张地图。`
+            zh: `设置待传送地点供以后使用。`
         },
         bytes: 8,
         params: [
@@ -1612,7 +1644,8 @@ const commands: WordData = {
     "setwarpplace": {
         value: 0x3F,
         description: {
-            en: `Sets the place a warp that lead to warp 127 of map 127.127 warps the player.`
+            en: `Sets the place a warp that lead to warp 127 of map 127.127 warps the player.`,
+            zh: `设置动态的待传送地点供以后使用。`
         },
         bytes: 8,
         params: [
@@ -1647,7 +1680,7 @@ const commands: WordData = {
         value: 0x40,
         description: {
             en: `Warps the player to another map.`,
-            zh: `跳转到另一张地图。`
+            zh: `设置潜水的待传送地点供以后使用。`
         },
         bytes: 8,
         params: [
@@ -1682,7 +1715,7 @@ const commands: WordData = {
         value: 0x41,
         description: {
             en: `Warps the player to another map.`,
-            zh: `跳转到另一张地图。`
+            zh: `设置掉落的待传送地点供以后使用。`
         },
         bytes: 8,
         params: [
@@ -1717,7 +1750,7 @@ const commands: WordData = {
         value: 0x42,
         description: {
             en: `Gets current position of the player on the map and stores it on specified variables.`,
-            zh: `跳转到另一张地图。`
+            zh: `获取玩家坐标，并将结果存储在指定的变量中。`
         },
         bytes: 8,
         params: [
@@ -1745,7 +1778,9 @@ const commands: WordData = {
         value: 0x44,
         description: {
             en: `Adds the quantity of the specified item.`,
-            zh: `添加一定数量的道具。`
+            zh: `
+            \n向玩家背包添加一定数量的道具。
+            \n如果添加成功，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 5,
         params: [
@@ -1765,7 +1800,9 @@ const commands: WordData = {
         value: 0x45,
         description: {
             en: `Removes the quantity of the specified item.`,
-            zh: `减少一定数量的道具。`
+            zh: `
+            \n删除玩家背包里一定数量的道具。
+            \n如果删除成功，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 5,
         params: [
@@ -1785,7 +1822,9 @@ const commands: WordData = {
         value: 0x46,
         description: {
             en: `Checks if the player has enough room in the bag for the specified item.`,
-            zh: `检查玩家的背包是否有足够的空间放置一定数量的道具。`
+            zh: `
+            \n检查玩家的背包是否有足够的空间放置一定数量的道具。
+            \n如果有，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 5,
         params: [
@@ -1805,7 +1844,9 @@ const commands: WordData = {
         value: 0x47,
         description: {
             en: `Checks if the player is carrying the specified item.`,
-            zh: `检查玩家是否携带一定数量的道具。`
+            zh: `
+            \n检查玩家是否携带一定数量的道具。
+            \n如果有，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 5,
         params: [
@@ -1825,7 +1866,7 @@ const commands: WordData = {
         value: 0x48,
         description: {
             en: `Checks the item type for the specified item and store the result in LASTRESULT.`,
-            zh: `检查指定道具的道具类型，并将结果存储在 LASTRESULT 中。`
+            zh: `检查指定道具的所属类别，并将结果存储在 LASTRESULT 中。`
         },
         bytes: 3,
         params: [
@@ -1840,7 +1881,9 @@ const commands: WordData = {
         value: 0x49,
         description: {
             en: `Adds the quantity of the specified item to player's PC.`,
-            zh: `向玩家的电脑中添加一定数量的道具。`
+            zh: `
+            \n向玩家的电脑中添加一定数量的道具。
+            \n如果添加成功，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 5,
         params: [
@@ -1860,7 +1903,9 @@ const commands: WordData = {
         value: 0x4A,
         description: {
             en: `Checks if the player has the specified item on his/her PC.`,
-            zh: `检查玩家的电脑中是否存有一定数量的道具。`
+            zh: `
+            \n检查玩家的电脑中是否存有一定数量的道具。
+            \n如果有，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 5,
         params: [
@@ -1880,7 +1925,9 @@ const commands: WordData = {
         value: 0x4B,
         description: {
             en: `Adds a decoration to player's PC.`,
-            zh: `向玩家的电脑中添加装饰。`
+            zh: `
+            \n向玩家的电脑中添加装饰。仅限宝石。
+            \n如果添加成功，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 3,
         params: [
@@ -1895,7 +1942,9 @@ const commands: WordData = {
         value: 0x4C,
         description: {
             en: `Removes a decoration from player's PC.`,
-            zh: `从玩家的电脑中移除装饰。`
+            zh: `
+            \n从玩家的电脑中删除装饰。
+            \n如果删除成功，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 3,
         params: [
@@ -1910,7 +1959,9 @@ const commands: WordData = {
         value: 0x4D,
         description: {
             en: `Tests a specific decoration to see if there's enough room to store it.`,
-            zh: `测试是否有足够的空间存放指定的装饰。`
+            zh: `
+            \n检查玩家的电脑是否有足够的空间存放指定的装饰。
+            \n如果有，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 3,
         params: [
@@ -1925,7 +1976,9 @@ const commands: WordData = {
         value: 0x4E,
         description: {
             en: `Checks if a specific decoration is present in player's PC.`,
-            zh: `检查玩家的电脑中是否存在指定的装饰。`
+            zh: `
+            \n检查玩家的电脑中是否存有指定的装饰。
+            \n如果有，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 3,
         params: [
@@ -1940,7 +1993,7 @@ const commands: WordData = {
         value: 0x4F,
         description: {
             en: `Applies the movement data found at the specified pointer to a sprite.`,
-            zh: `将在指定位置找到的移动数据应用于人物。`
+            zh: `读取指定地址上的移动数据，应用于屏幕或当前地图上的人物。`
         },
         bytes: 7,
         params: [
@@ -1960,7 +2013,7 @@ const commands: WordData = {
         value: 0x50,
         description: {
             en: `Applies the movement data found at the specified pointer to a sprite. Then set the specified X/Y coordinates.`,
-            zh: `将在指定位置找到的移动数据应用于人物。然后设置指定的 X / Y 坐标。`
+            zh: `读取指定地址上的移动数据，应用于屏幕或指定地图上的人物。`
         },
         bytes: 7,
         params: [
@@ -1975,14 +2028,14 @@ const commands: WordData = {
                 description: "Pointer to the movement data"
             },
             {
-                name: "X",
+                name: "bank",
                 type: "byte",
-                description: "X coordinate"
+                description: "Bank #"
             },
             {
-                name: "Y",
+                name: "map",
                 type: "byte",
-                description: "Y coordinate"
+                description: "Map #"
             }
         ]
     },
@@ -1990,7 +2043,7 @@ const commands: WordData = {
         value: 0x51,
         description: {
             en: `Waits for applymovement to finish.`,
-            zh: `等待 applymovement 结束。`
+            zh: `等待 applymovement 指令完成。`
         },
         bytes: 3,
         params: [
@@ -2005,7 +2058,7 @@ const commands: WordData = {
         value: 0x52,
         description: {
             en: `Waits for applymovement to finish. Then set the specified X/Y coordinates.`,
-            zh: `等待 applymovement 结束。然后设置指定的 X / Y 坐标。`
+            zh: `等待 applymovementpos 指令完成。`
         },
         bytes: 5,
         params: [
@@ -2015,14 +2068,14 @@ const commands: WordData = {
                 description: "People # to wait for"
             },
             {
-                name: "X",
+                name: "bank",
                 type: "byte",
-                description: "X coordinate"
+                description: "Bank #"
             },
             {
-                name: "Y",
+                name: "map",
                 type: "byte",
-                description: "Y coordinate"
+                description: "Map #"
             }
         ]
     },
@@ -2030,7 +2083,7 @@ const commands: WordData = {
         value: 0x53,
         description: {
             en: `Hides a sprite.`,
-            zh: `隐藏一个人物。`
+            zh: `隐藏当前地图内的人物。`
         },
         bytes: 3,
         params: [
@@ -2045,7 +2098,7 @@ const commands: WordData = {
         value: 0x54,
         description: {
             en: `Hides a sprite, then set the specified X/Y coordinates.`,
-            zh: `隐藏一个人物，然后设置指定的 X / Y 坐标。`
+            zh: `隐藏指定地图内的人物。`
         },
         bytes: 5,
         params: [
@@ -2055,14 +2108,14 @@ const commands: WordData = {
                 description: "People # to hide"
             },
             {
-                name: "X",
+                name: "bank",
                 type: "byte",
-                description: "X coordinate"
+                description: "Bank #"
             },
             {
-                name: "Y",
+                name: "map",
                 type: "byte",
-                description: "Y coordinate"
+                description: "Map #"
             }
         ]
     },
@@ -2070,7 +2123,7 @@ const commands: WordData = {
         value: 0x55,
         description: {
             en: `Shows a previously vanished sprite.`,
-            zh: `显示一个之前消失的人物。`
+            zh: `在当前地图内显示一个隐藏的人物。`
         },
         bytes: 3,
         params: [
@@ -2085,7 +2138,7 @@ const commands: WordData = {
         value: 0x56,
         description: {
             en: `Shows a previously vanished sprite. Then set the specified X/Y coordinates.`,
-            zh: `显示一个之前消失的人物。然后设置指定的 X / Y 坐标。`
+            zh: `在指定地图内显示一个隐藏的人物。`
         },
         bytes: 5,
         params: [
@@ -2095,14 +2148,14 @@ const commands: WordData = {
                 description: "People # to show"
             },
             {
-                name: "X",
+                name: "bank",
                 type: "byte",
-                description: "X coordinate"
+                description: "Bank #"
             },
             {
-                name: "Y",
+                name: "map",
                 type: "byte",
-                description: "Y coordinate"
+                description: "Map #"
             }
         ]
     },
@@ -2135,7 +2188,7 @@ const commands: WordData = {
         value: 0x58,
         description: {
             en: `Makes the sprite visible at selected bank and map.`,
-            zh: `使人物在指定的库和地图上可见。`
+            zh: `使人物在指定地图上可见。`
         },
         bytes: 5,
         params: [
@@ -2160,7 +2213,7 @@ const commands: WordData = {
         value: 0x59,
         description: {
             en: `Makes the sprite invisible at selected bank and map.`,
-            zh: `使人物在指定的库和地图上不可见。`
+            zh: `使人物在指定地图上不可见。`
         },
         bytes: 5,
         params: [
@@ -2193,7 +2246,7 @@ const commands: WordData = {
         value: 0x5B,
         description: {
             en: `Changes a facing of a sprite.`,
-            zh: `更改人物的朝向。`
+            zh: `使人物面向指定方向。`
         },
         bytes: 4,
         params: [
@@ -2213,7 +2266,10 @@ const commands: WordData = {
         value: 0x5C,
         description: {
             en: `Starts a trainer battle. Depending on the kind of battle, last parameters may differ.`,
-            zh: `进入训练师对战。根据战斗的类型，最后的参数可能会有所不同。`
+            zh: `
+            \n进入训练师对战。
+            \n如果训练师被击败，则将训练师 flag 设置为存在；
+            \n当训练师 flag 存在时，指令不生效。`
         },
         bytes: 14,
         params: [
@@ -2256,7 +2312,7 @@ const commands: WordData = {
         value: 0x5E,
         description: {
             en: `Returns from the trainer battle screen without starting message.`,
-            zh: `从训练师对战画面返回，但没有起始信息。`
+            zh: `执行最后一次战斗的训练师的对话脚本。`
         },
         bytes: 1
     },
@@ -2264,7 +2320,7 @@ const commands: WordData = {
         value: 0x5F,
         description: {
             en: `Returns from the trainer battle screen without ending message.`,
-            zh: `从训练师对战画面返回，但没有结束信息。`
+            zh: `执行最后一次战斗的训练师的把训练师加入领航员的脚本。`
         },
         bytes: 1
     },
@@ -2272,7 +2328,7 @@ const commands: WordData = {
         value: 0x60,
         description: {
             en: `Checks if the specified trainer flag is already activated and store the result in LASTRESULT.`,
-            zh: `检查指定的训练师标志是否已经激活，并将结果存储在 LASTRESULT 中。`
+            zh: `检查指定的训练师 flag 是否存在，并将结果存储在 LASTRESULT 中。`
         },
         bytes: 3,
         params: [
@@ -2287,7 +2343,7 @@ const commands: WordData = {
         value: 0x61,
         description: {
             en: `Deactivates the specified trainer flag.`,
-            zh: `清除指定的训练师标志。`
+            zh: `清除指定训练师 flag 的存在状态。`
         },
         bytes: 3,
         params: [
@@ -2302,7 +2358,7 @@ const commands: WordData = {
         value: 0x62,
         description: {
             en: `Activates the specified trainer flag.`,
-            zh: `激活指定的训练师标志。`
+            zh: `设置指定的训练师 flag 为存在状态。`
         },
         bytes: 3,
         params: [
@@ -2342,7 +2398,7 @@ const commands: WordData = {
         value: 0x64,
         description: {
             en: `Changes the location of the specified sprite to a value which is exactly one tile above the top left corner of the screen.`,
-            zh: `将人物移动到屏幕左上角的地图块上。`
+            zh: `将人物移动到人物原始的位置。`
         },
         bytes: 3,
         params: [
@@ -2357,7 +2413,7 @@ const commands: WordData = {
         value: 0x65,
         description: {
             en: `Changes the behaviour of a sprite.`,
-            zh: `更改人物的行为。`
+            zh: `更改人物的移动类型。`
         },
         bytes: 4,
         params: [
@@ -2377,7 +2433,7 @@ const commands: WordData = {
         value: 0x66,
         description: {
             en: `Waits for preparemsg to finish.`,
-            zh: `等待 preparemsg 结束。`
+            zh: `等待 preparemsg 指令完成。`
         },
         bytes: 1
     },
@@ -2385,7 +2441,7 @@ const commands: WordData = {
         value: 0x67,
         description: {
             en: `Prepares a pointer dialogue text for being displayed.`,
-            zh: `准备要显示的对话文本指针。`
+            zh: `显示一个普通对话框，对话框的文字可以来自文本地址或者脚本缓存库。`
         },
         bytes: 5,
         params: [
@@ -2400,7 +2456,7 @@ const commands: WordData = {
         value: 0x68,
         description: {
             en: `Holds a msgbox open and closes it on keypress.`,
-            zh: `保持打开的对话框，直到按下按键后关闭。`
+            zh: `当玩家按下按键时，关闭显示的对话框。`
         },
         bytes: 1
     },
@@ -2440,7 +2496,7 @@ const commands: WordData = {
         value: 0x6D,
         description: {
             en: `Waits until a key is pressed.`,
-            zh: `等待，直到按键被按下。`
+            zh: `等待任意按键的按下。`
         },
         bytes: 1
     },
@@ -2448,7 +2504,9 @@ const commands: WordData = {
         value: 0x6E,
         description: {
             en: `Displays a Yes / No box at specified coordinates.`,
-            zh: `在指定位置显示“是/否”判断框。`
+            zh: `
+            在指定位置显示 "是 / 否" 判断框。
+            \n如果选择 "是"，则将 LASTRESULT 设置为 0x1，否则设置为 0x0。`
         },
         bytes: 3,
         params: [
@@ -2468,7 +2526,7 @@ const commands: WordData = {
         value: 0x6F,
         description: {
             en: `Puts up a list of choices for the player to make.`,
-            zh: `在指定位置显示多选框。`
+            zh: `在指定位置显示多选框，并将选择结果存储到 LASTRESULT 中。`
         },
         bytes: 5,
         params: [
@@ -2498,7 +2556,7 @@ const commands: WordData = {
         value: 0x70,
         description: {
             en: `Puts up a list of choices for the player to make. A default choice can be set.`,
-            zh: `在指定位置显示多选框。可以设置默认选项。`
+            zh: `在指定位置显示多选框，并将选择结果存储到 LASTRESULT 中。可以设置默认选项。`
         },
         bytes: 6,
         params: [
@@ -2533,7 +2591,7 @@ const commands: WordData = {
         value: 0x71,
         description: {
             en: `Puts up a list of choices for the player to make. The number of choices per row can be set.`,
-            zh: `在指定位置显示多选框。可以设置每行的选项数。`
+            zh: `在指定位置显示多选框，并将选择结果存储到 LASTRESULT 中。可以设置每行的选项数。`
         },
         bytes: 6,
         params: [
@@ -2691,7 +2749,7 @@ const commands: WordData = {
         value: 0x77,
         description: {
             en: `Shows the picture of the winner of set contest.`,
-            zh: `显示比赛获胜者的照片。`
+            zh: `显示华丽大赛获胜者的照片。仅限宝石。`
         },
         bytes: 2,
         params: [
@@ -2706,7 +2764,7 @@ const commands: WordData = {
         value: 0x78,
         description: {
             en: `Displays a braille box.`,
-            zh: `显示盲文框。`
+            zh: `显示盲文对话框。`
         },
         bytes: 5,
         params: [
@@ -2721,7 +2779,11 @@ const commands: WordData = {
         value: 0x79,
         description: {
             en: `Gives the player a Pokémon.`,
-            zh: `给玩家宝可梦。`
+            zh: `
+            \n给予玩家一只拥有指定等级和携带道具的宝可梦。
+            \n如果玩家队伍有空间存放宝可梦，则将 LASTRESULT 设置为 0x0；
+            \n如果玩家队伍没有空间而电脑有空间，则将 LASTRESULT 设置为 0x1；
+            \n如果玩家队伍和电脑都没有空间，则将 LASTRESULT 设置为 0x2。`
         },
         bytes: 15,
         params: [
@@ -2761,7 +2823,11 @@ const commands: WordData = {
         value: 0x7A,
         description: {
             en: `Gives the player an egg of the specified Pokémon.`,
-            zh: `给玩家蛋。`
+            zh: `
+            \n给予玩家一只宝可梦蛋。
+            \n如果玩家队伍有空间存放宝可梦蛋，则将 LASTRESULT 设置为 0x0；
+            \n如果玩家队伍没有空间而电脑有空间，则将 LASTRESULT 设置为 0x1；
+            \n如果玩家队伍和电脑都没有空间，则将 LASTRESULT 设置为 0x2。`
         },
         bytes: 3,
         params: [
@@ -2776,7 +2842,7 @@ const commands: WordData = {
         value: 0x7B,
         description: {
             en: `Sets a new amount of PP for the specified Pokémon in player's party.`,
-            zh: `为玩家队伍中指定的宝可梦设置新的 PP 数量。`
+            zh: `修改玩家队伍中宝可梦的指定技能插槽的技能。`
         },
         bytes: 5,
         params: [
@@ -2801,7 +2867,7 @@ const commands: WordData = {
         value: 0x7C,
         description: {
             en: `Checks if at least one Pokémon in the party has a particular attack.`,
-            zh: `检查队伍中是否至少有一只宝可梦拥有指定的技能。`
+            zh: `检查队伍中是否至少有一只宝可梦拥有指定的技能，并将结果存储到 LASTRESULT 中。`
         },
         bytes: 3,
         params: [
@@ -2816,7 +2882,7 @@ const commands: WordData = {
         value: 0x7D,
         description: {
             en: `Stores a Pokémon name within a specified buffer.`,
-            zh: `将宝可梦的名称存储在指定的缓冲区中。`
+            zh: `将宝可梦的种族名字存储在指定的文本缓冲区中。`
         },
         bytes: 4,
         params: [
@@ -2836,7 +2902,7 @@ const commands: WordData = {
         value: 0x7E,
         description: {
             en: `Stores the first Pokémon name in player's party within a specified buffer.`,
-            zh: `将玩家队伍中第一只宝可梦的名称存储在指定的缓冲区中。`
+            zh: `将玩家队伍中第一只宝可梦的种族名字存储在指定的文本缓冲区中。`
         },
         bytes: 2,
         params: [
@@ -2851,7 +2917,7 @@ const commands: WordData = {
         value: 0x7F,
         description: {
             en: `Stores the selected Pokémon name in player's party within a specified buffer.`,
-            zh: `将玩家队伍中选定的宝可梦的名称存储在指定的缓冲区中。`
+            zh: `将玩家队伍中选定的宝可梦的昵称存储在指定的文本缓冲区中。`
         },
         bytes: 4,
         params: [
@@ -2871,7 +2937,7 @@ const commands: WordData = {
         value: 0x80,
         description: {
             en: `Stores an item name within a specified buffer.`,
-            zh: `将道具的名称存储在指定的缓冲区中。`
+            zh: `将道具的名称存储在指定的文本缓冲区中。`
         },
         bytes: 4,
         params: [
@@ -2891,7 +2957,7 @@ const commands: WordData = {
         value: 0x81,
         description: {
             en: `Stores a decoration name within a specified buffer.`,
-            zh: `将装饰的名称存储在指定的缓冲区中。`
+            zh: `将装饰的名称存储在指定的文本缓冲区中。`
         },
         bytes: 4,
         params: [
@@ -2911,7 +2977,7 @@ const commands: WordData = {
         value: 0x82,
         description: {
             en: `Stores an attack name within a specified buffer.`,
-            zh: `将技能的名称存储在指定的缓冲区中。`
+            zh: `将技能的名称存储在指定的文本缓冲区中。`
         },
         bytes: 4,
         params: [
@@ -2931,7 +2997,7 @@ const commands: WordData = {
         value: 0x83,
         description: {
             en: `Variable version on buffernumber.`,
-            zh: `将变量的值存储在指定的缓冲区中。`
+            zh: `将数值转换为文本并存储在指定的文本缓冲区中。`
         },
         bytes: 4,
         params: [
@@ -2951,7 +3017,7 @@ const commands: WordData = {
         value: 0x84,
         description: {
             en: `Stores a standard string within a specified buffer.`,
-            zh: `将标准字符串存储在指定的缓冲区中。`
+            zh: `将内置文本库中的文本存储在指定的文本缓冲区中。`
         },
         bytes: 4,
         params: [
@@ -2971,7 +3037,7 @@ const commands: WordData = {
         value: 0x85,
         description: {
             en: `Stores a string within a specified buffer.`,
-            zh: `将字符串存储在指定的缓冲区中。`
+            zh: `将字符串存储在指定的文本缓冲区中。`
         },
         bytes: 6,
         params: [
@@ -2991,7 +3057,7 @@ const commands: WordData = {
         value: 0x86,
         description: {
             en: `Opens the Pokémart shop system with the item/price list found at the selected pointer.`,
-            zh: `打开商店系统，里面包含在指定的指针处找到的商品价格表。`
+            zh: `打开交易系统，里面包含在指定的指针处找到的道具价格表。`
         },
         bytes: 5,
         params: [
@@ -3006,7 +3072,7 @@ const commands: WordData = {
         value: 0x87,
         description: {
             en: `Opens the Pokémart shop system with the item/price list found at the selected pointer.`,
-            zh: `打开商店系统，里面包含在指定的指针处找到的商品价格表。`
+            zh: `打开交易系统，里面包含在指定的指针处找到的装饰品价格表。`
         },
         bytes: 5,
         params: [
@@ -3021,7 +3087,7 @@ const commands: WordData = {
         value: 0x88,
         description: {
             en: `Opens the Pokémart shop system with the item/price list found at the selected pointer.`,
-            zh: `打开商店系统，里面包含在指定的指针处找到的商品价格表。`
+            zh: `打开商店系统，里面包含在指定的指针处找到的装饰品价格表。`
         },
         bytes: 5,
         params: [
@@ -3036,7 +3102,7 @@ const commands: WordData = {
         value: 0x89,
         description: {
             en: `Opens the Casino system.`,
-            zh: `打开游戏城系统。`
+            zh: `打开老虎机系统。`
         },
         bytes: 5,
         params: [
@@ -3051,24 +3117,24 @@ const commands: WordData = {
         value: 0x8A,
         description: {
             en: `Apparently does absolutely nothing.`,
-            zh: `什么都不做。`
+            zh: `种树果。`
         },
         bytes: 4,
         params: [
             {
-                name: "???",
+                name: "tree",
                 type: "byte",
-                description: "???"
+                description: "Tree"
             },
             {
-                name: "???",
+                name: "berry",
                 type: "byte",
-                description: "???"
+                description: "Berry #"
             },
             {
-                name: "???",
+                name: "stage",
                 type: "byte",
-                description: "???"
+                description: "Stage"
             }
         ]
     },
@@ -3076,7 +3142,7 @@ const commands: WordData = {
         value: 0x8B,
         description: {
             en: `Opens up a menu for choosing a contest Pokémon.`,
-            zh: `打开选择比赛宝可梦的菜单。`
+            zh: `选择精灵参加华丽大赛，并将所选精灵在队伍中的编号存储到变量 0x8004 中。`
         },
         bytes: 1
     },
@@ -3084,7 +3150,7 @@ const commands: WordData = {
         value: 0x8C,
         description: {
             en: `Starts a Pokémon contest.`,
-            zh: `进入宝可梦比赛。`
+            zh: `开始华丽大赛。`
         },
         bytes: 1
     },
@@ -3092,7 +3158,7 @@ const commands: WordData = {
         value: 0x8D,
         description: {
             en: `Shows Pokémon contest results.`,
-            zh: `显示宝可梦比赛的结果。`
+            zh: `显示华丽大赛的结果。`
         },
         bytes: 1
     },
@@ -3108,14 +3174,14 @@ const commands: WordData = {
         value: 0x8F,
         description: {
             en: `Generates a random number storing it into LASTRESULT.`,
-            zh: `生成一个随机数，并将结果存储在 LASTRESULT 中。`
+            zh: `在从 0 到指定值的范围内生成一个随机数，并将结果存储在 LASTRESULT 中。`
         },
         bytes: 3,
         params: [
             {
                 name: "max",
                 type: "word",
-                description: "Total possibilities."
+                description: "Max value"
             }
         ]
     },
@@ -3123,7 +3189,7 @@ const commands: WordData = {
         value: 0x90,
         description: {
             en: `Gives the player some money.`,
-            zh: `给玩家金钱。`
+            zh: `给予玩家一定量的钱。`
         },
         bytes: 6,
         params: [
@@ -3143,7 +3209,7 @@ const commands: WordData = {
         value: 0x91,
         description: {
             en: `Takes some money from the player.`,
-            zh: `减少玩家的金钱。`
+            zh: `扣除玩家一定量的钱。`
         },
         bytes: 6,
         params: [
@@ -3163,7 +3229,7 @@ const commands: WordData = {
         value: 0x92,
         description: {
             en: `Checks if the player has a specified amount of money.`,
-            zh: `检查玩家是否有足够的金额。`
+            zh: `检查玩家是否有足够的钱，并将结果存储到 LASTRESULT 中。`
         },
         bytes: 6,
         params: [
@@ -3268,7 +3334,7 @@ const commands: WordData = {
         value: 0x97,
         description: {
             en: `Fades the screen in or out.`,
-            zh: `淡入或淡出屏幕。`
+            zh: `执行屏幕渐变效果。`
         },
         bytes: 2,
         params: [
@@ -3283,7 +3349,7 @@ const commands: WordData = {
         value: 0x98,
         description: {
             en: `Fades the screen in or out, after some delay.`,
-            zh: `在一定延迟后，淡入或淡出屏幕。`
+            zh: `执行屏幕渐变效果，并设置渐变速度。`
         },
         bytes: 3,
         params: [
@@ -3303,7 +3369,7 @@ const commands: WordData = {
         value: 0x99,
         description: {
             en: `Calls flash animation that darkens the area. Must be called from a level script.`,
-            zh: `调用使区域变暗的 flash 动画。必须从 level script 中调用。`
+            zh: `设置视野范围半径，但必须通过打开背包等手段刷新界面才会生效。`
         },
         bytes: 3,
         params: [
@@ -3318,7 +3384,7 @@ const commands: WordData = {
         value: 0x9A,
         description: {
             en: `Calls flash animation that lightens the area.`,
-            zh: `调用使区域变亮的 flash 动画。`
+            zh: `设置闪光技能的视野范围半径，并带有视野范围缩放的动画。`
         },
         bytes: 2,
         params: [
@@ -3332,7 +3398,8 @@ const commands: WordData = {
     "preparemsg2": {
         value: 0x9B,
         description: {
-            en: `This command is currently under investigation. No detailed information is available at this time.`
+            en: `This command is currently under investigation. No detailed information is available at this time.`,
+            zh: `显示一个普通对话框，并带有自动滚动效果。`
         },
         bytes: 5,
         params: [
@@ -3347,7 +3414,7 @@ const commands: WordData = {
         value: 0x9C,
         description: {
             en: `Executes the specified move animation.`,
-            zh: `执行指定的移动动画。`
+            zh: `运行 ROM 里内置的动画。`
         },
         bytes: 3,
         params: [
@@ -3362,7 +3429,7 @@ const commands: WordData = {
         value: 0x9D,
         description: {
             en: `Sets the move animation.`,
-            zh: `设置移动动画。`
+            zh: `设置运行 ROM 里内置动画所需的参数。`
         },
         bytes: 4,
         params: [
@@ -3440,7 +3507,7 @@ const commands: WordData = {
         value: 0xA2,
         description: {
             en: `Sets a tile on the map. You must somehow refresh that part.`,
-            zh: `设置地图块。你必须以某种方式刷新该部分。`
+            zh: `设置指定坐标上的地图块以及运动许可。需要使用 special 刷新地图块。`
         },
         bytes: 9,
         params: [
@@ -3516,7 +3583,7 @@ const commands: WordData = {
         value: 0xA7,
         description: {
             en: `Changes the current map footer loading the new one. The map must be refreshed afterwards in order to work fine.`,
-            zh: `更改当前的地图脚。之后必须刷新地图才能正常工作。`
+            zh: `在当前地图上加载特殊地图，比如绿宝石的幻岛。`
         },
         bytes: 3,
         params: [
@@ -3531,7 +3598,7 @@ const commands: WordData = {
         value: 0xA8,
         description: {
             en: `Makes the specified sprite go up one level at selected bank and map.`,
-            zh: `使指定的人物在选定的库和地图上上升一个级别。`
+            zh: `使指定地图上的人物的优先级上升一个级别。`
         },
         bytes: 6,
         params: [
@@ -3561,7 +3628,7 @@ const commands: WordData = {
         value: 0xA9,
         description: {
             en: `Restores the original level, at selected bank and map, for the specified sprite.`,
-            zh: `使指定的人物在选定的库和地图上恢复原来的级别。`
+            zh: `使指定地图上的任务的优先级恢复到原来的级别。`
         },
         bytes: 5,
         params: [
@@ -3626,7 +3693,7 @@ const commands: WordData = {
         value: 0xAB,
         description: {
             en: `Changes a facing of a virtual sprite.`,
-            zh: `在当前地图中创建虚拟人物。`
+            zh: `使虚拟人物面向指定方向。`
         },
         bytes: 3,
         params: [
@@ -3785,7 +3852,7 @@ const commands: WordData = {
         value: 0xB4,
         description: {
             en: `Gives the player a specified quantity of coins.`,
-            zh: `给玩家硬币。`
+            zh: `给予玩家一定量的硬币。`
         },
         bytes: 3,
         params: [
@@ -3800,7 +3867,7 @@ const commands: WordData = {
         value: 0xB5,
         description: {
             en: `Removes a specified quantity of coins.`,
-            zh: `减少指定数量的硬币。`
+            zh: `扣除玩家一定量的硬币。`
         },
         bytes: 3,
         params: [
@@ -3815,7 +3882,7 @@ const commands: WordData = {
         value: 0xB6,
         description: {
             en: `Prepares to start a battle with a pecified Pokémon, level and item.`,
-            zh: `准备和指定等级和携带道具的宝可梦开始战斗。`
+            zh: `准备和指定等级和携带道具的野生宝可梦开始战斗。`
         },
         bytes: 6,
         params: [
@@ -3848,14 +3915,14 @@ const commands: WordData = {
         value: 0xB8,
         description: {
             en: `Jumps to the specified value - value at 0x020375C4 in RAM, continuing execution from there.`,
-            zh: `跳转到指定的值 - RAM 中 0x020375C4 地址的值，从那里继续执行。`
+            zh: `用指定的地址减去该指令所在的地址，并将结果存储在虚拟脚本地址中。`
         },
         bytes: 6,
         params: [
             {
                 name: "value",
-                type: "dword",
-                description: "Value"
+                type: "pointer",
+                description: "Pointer"
             }
         ]
     },
@@ -3863,7 +3930,7 @@ const commands: WordData = {
         value: 0xB9,
         description: {
             en: `Jumps to a custom function.`,
-            zh: `跳转到自定义函数。`
+            zh: `使用 goto 跳转到指定的虚拟脚本地址执行脚本。`
         },
         bytes: 5,
         params: [
@@ -3878,7 +3945,7 @@ const commands: WordData = {
         value: 0xBA,
         description: {
             en: `Calls a custom function.`,
-            zh: `调用自定义函数。`
+            zh: `使用 call 跳转到指定的虚拟脚本地址执行脚本。`
         },
         bytes: 5,
         params: [
@@ -3893,7 +3960,7 @@ const commands: WordData = {
         value: 0xBB,
         description: {
             en: `Jumps to a custom function, conditional version.`,
-            zh: `跳转到自定义函数的条件版本。`
+            zh: `使用 if1 跳转到指定的虚拟脚本地址执行脚本。`
         },
         bytes: 6,
         params: [
@@ -3913,7 +3980,7 @@ const commands: WordData = {
         value: 0xBC,
         description: {
             en: `Calls a custom function, conditional version.`,
-            zh: `调用自定义函数的条件版本。`
+            zh: `使用 if2 跳转到指定的虚拟脚本地址执行脚本。`
         },
         bytes: 6,
         params: [
@@ -3933,7 +4000,7 @@ const commands: WordData = {
         value: 0xBD,
         description: {
             en: `Prepares a pointer to dialogue text for use.`,
-            zh: `准备一个指向对话文本的指针以供使用。`
+            zh: `显示一个普通对话框，文本来自于指定虚拟脚本地址。`
         },
         bytes: 5,
         params: [
@@ -3948,7 +4015,7 @@ const commands: WordData = {
         value: 0xBE,
         description: {
             en: `Prepares a pointer to dialogue text for use.`,
-            zh: `准备一个指向对话文本的指针以供使用。`
+            zh: `显示一个盲文对话框，文本来自于指定虚拟脚本地址。`
         },
         bytes: 5,
         params: [
@@ -3963,7 +4030,7 @@ const commands: WordData = {
         value: 0xBF,
         description: {
             en: `Stores a custom string within a buffer.`,
-            zh: `将自定义字符串存储在缓冲区中。`
+            zh: `将文本存储在指定的文本缓冲区中，文本来自于指定虚拟脚本地址。`
         },
         bytes: 6,
         params: [
@@ -4042,14 +4109,15 @@ const commands: WordData = {
     "cmdc3": {
         value: 0xC3,
         description: {
-            en: `This command is currently under investigation, No detailed information is available at this time.`
+            en: `This command is currently under investigation, No detailed information is available at this time.`,
+            zh: `设置游戏状态。`
         },
         bytes: 2,
         params: [
             {
-                name: "???",
+                name: "state",
                 type: "byte",
-                description: "???"
+                description: "State"
             }
         ]
     },
@@ -4057,7 +4125,7 @@ const commands: WordData = {
         value: 0xC4,
         description: {
             en: `Warps the player to another map.`,
-            zh: `跳转到另一张地图。`
+            zh: `设置逃走的待传送地点供以后使用。`
         },
         bytes: 8,
         params: [
@@ -4091,8 +4159,8 @@ const commands: WordData = {
     "waitcry": {
         value: 0xC5,
         description: {
-            en: `Waits for cry to finish`,
-            zh: `等待 cry 结束。`
+            en: `Waits for cry to finish.`,
+            zh: `等待 cry 指令完成。`
         },
         bytes: 1
     },
@@ -4100,7 +4168,7 @@ const commands: WordData = {
         value: 0xC6,
         description: {
             en: `Stores the name of a PC box within a specified buffer.`,
-            zh: `将 PC 的盒子名称存储在指定的缓冲区中。`
+            zh: `将玩家电脑的盒子名称存储在指定的文本缓冲区中。`
         },
         bytes: 4,
         params: [
@@ -4120,7 +4188,7 @@ const commands: WordData = {
         value: 0xC7,
         description: {
             en: `Changes the text color used. FR/LG only.`,
-            zh: `更改使用的文本颜色。仅限火叶。`
+            zh: `更改文本颜色。仅限火叶。`
         },
         bytes: 2,
         params: [
@@ -4149,7 +4217,7 @@ const commands: WordData = {
         value: 0xCA,
         description: {
             en: `Changes the graphics used by msgboxes in order to make them look like signs. FR/LG only.`,
-            zh: `更改对话框使用的图形，使其看起来像标志。仅限火叶。`
+            zh: `将后面显示的对话框变成路牌型。仅限火叶。`
         },
         bytes: 1
     },
@@ -4157,7 +4225,7 @@ const commands: WordData = {
         value: 0xCB,
         description: {
             en: `Clears the effect of the msgboxsign command. FR/LG only.`,
-            zh: `清除 msgboxsign 的影响。仅限火叶。`
+            zh: `将后面显示的对话框变成普通型。仅限火叶。`
         },
         bytes: 1
     },
@@ -4165,7 +4233,7 @@ const commands: WordData = {
         value: 0xCC,
         description: {
             en: `Compares the value of a chosen hidden variable. FR/LG only.`,
-            zh: `将所选的隐藏变量和值进行比较。仅限火叶。`
+            zh: `将游戏状态值与指定值进行比较。仅限火叶。`
         },
         bytes: 4,
         params: [
@@ -4215,7 +4283,7 @@ const commands: WordData = {
         value: 0xCF,
         description: {
             en: `Calculates the current location of the RAM script area and passes the execution to that offset.`,
-            zh: `计算当前 RAM 脚本区域的位置，并将执行传递到相应的偏移。`
+            zh: `读取保存在 RAM 里的脚本，如果存在，则跳转到脚本地址执行脚本。`
         },
         bytes: 1
     },
@@ -4223,7 +4291,7 @@ const commands: WordData = {
         value: 0xD0,
         description: {
             en: `Sets the flag used to allow the player to fly to a specific place. FR/LG only.`,
-            zh: `设置用于允许玩家飞往指定地点的标志。仅限火叶。`
+            zh: `设置地图 flag，使飞行点生效。仅限火叶。`
         },
         bytes: 3,
         params: [
@@ -4238,7 +4306,7 @@ const commands: WordData = {
         value: 0xD1,
         description: {
             en: `Warps the player to another map. Teleport effect.`,
-            zh: `跳转到另一张地图。传送效果。`
+            zh: `将玩家传送到指定地点，有上下传送并旋转的效果。`
         },
         bytes: 8,
         params: [
@@ -4273,7 +4341,7 @@ const commands: WordData = {
         value: 0xD2,
         description: {
             en: `Changes the catch location for a specified Pokémon in player's party.`,
-            zh: `更改玩家队伍中指定宝可梦的捕获位置。`
+            zh: `设置玩家队伍中指定宝可梦的捕获地点。`
         },
         bytes: 4,
         params: [
@@ -4292,7 +4360,8 @@ const commands: WordData = {
     "braille2": {
         value: 0xD3,
         description: {
-            en: `This command is currently under investigation, No detailed information is available at this time.`
+            en: `This command is currently under investigation, No detailed information is available at this time.`,
+            zh: `获取盲文文本的长度，并将结果存储到变量 0x8004 中。仅限火叶。`
         },
         bytes: 5,
         params: [
@@ -4307,7 +4376,7 @@ const commands: WordData = {
         value: 0xD4,
         description: {
             en: `Stores a plural item name within a specified buffer. FR/LG only.`,
-            zh: `将复数个道具的名称存储在指定的缓冲区中。仅限火叶。`
+            zh: `将道具名称的复数形式存储在指定的文本缓冲区中。仅限火叶。`
         },
         bytes: 6,
         params: [
@@ -4352,7 +4421,8 @@ const commands: WordData = {
     "warp7": {
         value: 0xD7,
         description: {
-            en: `This command is currently under investigation, No detailed information is available at this time.`
+            en: `This command is currently under investigation, No detailed information is available at this time.`,
+            zh: `将玩家传送到指定地点。仅限绿宝石。`
         },
         bytes: 8,
         params: [
@@ -4423,7 +4493,7 @@ const commands: WordData = {
         value: 0xDC,
         description: {
             en: `Fades the screen in or out. Emerald only.`,
-            zh: `淡入或淡出屏幕。仅限绿宝石。`
+            zh: `执行屏幕渐变效果。仅限绿宝石。`
         },
         bytes: 2,
         params: [
@@ -4438,7 +4508,7 @@ const commands: WordData = {
         value: 0xDD,
         description: {
             en: `Stores the name of the selected trainer class within a specified buffer. Emerald only.`,
-            zh: `将选中的训练师类别的名称存储在指定的缓冲区中。仅限绿宝石。`
+            zh: `将训练师的类型名称存储在指定的文本缓冲区中。仅限绿宝石。`
         },
         bytes: 4,
         params: [
@@ -4458,7 +4528,7 @@ const commands: WordData = {
         value: 0xDE,
         description: {
             en: `Stores the name of the selected trainer within a specified buffer. Emerald only.`,
-            zh: `将选中的训练师的名称存储在指定的缓冲区中。仅限绿宝石。`
+            zh: `将训练师的名称存储在指定的文本缓冲区中。仅限绿宝石。`
         },
         bytes: 4,
         params: [
@@ -4478,7 +4548,7 @@ const commands: WordData = {
         value: 0xDF,
         description: {
             en: `Displays a PokéNav call. Emerald only.`,
-            zh: `显示宝可梦导航器呼叫。仅限绿宝石。`
+            zh: `显示宝可梦导航器的对话框，对话框的文字可以来自文本地址或者脚本缓存库。仅限绿宝石。`
         },
         bytes: 5,
         params: [
@@ -4492,7 +4562,8 @@ const commands: WordData = {
     "warp8": {
         value: 0xE0,
         description: {
-            en: `This command is currently under investigation, No detailed information is available at this time.`
+            en: `This command is currently under investigation, No detailed information is available at this time.`,
+            zh: `将玩家传送到指定地点。仅限绿宝石。`
         },
         bytes: 8,
         params: [
@@ -4527,7 +4598,7 @@ const commands: WordData = {
         value: 0xE1,
         description: {
             en: `Stores the name of the selected contest type within a specified buffer. Emerald only.`,
-            zh: `将选中的比赛类型的名称存储在指定的缓冲区中。仅限绿宝石。`
+            zh: `将华丽大赛类型的名称存储在指定的文本缓冲区中。仅限宝石。`
         },
         bytes: 4,
         params: [
@@ -4547,7 +4618,7 @@ const commands: WordData = {
         value: 0xE2,
         description: {
             en: `Stores a plural item name within a specified buffer. FR/LG only.`,
-            zh: `将复数个道具的名称存储在指定的缓冲区中。仅限绿宝石。`
+            zh: `将道具名称的复数形式存储在指定的文本缓冲区中。仅限绿宝石。`
         },
         bytes: 6,
         params: [
@@ -4571,7 +4642,7 @@ const commands: WordData = {
     "msgbox": {
         description: {
             en: `Loads a pointer into memory to display a message later on.`,
-            zh: `将指针加载到内存中，以便稍后显示信息。`
+            zh: `显示指定类型的对话框。`
         },
         bytes: 8,
         params: [
@@ -4593,7 +4664,7 @@ const commands: WordData = {
     "giveitem": {
         description: {
             en: `Gives a specified item and displays an aftermath message of the player receiving the item.`,
-            zh: `给玩家物品，并显示玩家收到该物品后的信息。`
+            zh: `给予玩家一定量的物品，并显示玩家收到该物品后的信息。`
         },
         bytes: 12,
         params: [
@@ -4617,7 +4688,7 @@ const commands: WordData = {
     "giveitem2": {
         description: {
             en: `Similar to giveitem except it plays a fanfare too.`,
-            zh: `类似 giveitem，但是会播放效果音。`
+            zh: `类似 giveitem，但是会播放效果音。仅限火叶。`
         },
         bytes: 17,
         params: [
@@ -4641,7 +4712,7 @@ const commands: WordData = {
     "giveitem3": {
         description: {
             en: `Gives the player a specified decoration and displays a related message.`,
-            zh: `给玩家装饰并显示相关信息。`
+            zh: `给予玩家装饰并显示相关信息。仅限宝石。`
         },
         bytes: 7,
         params: [
@@ -4679,7 +4750,7 @@ const commands: WordData = {
     "wildbattle2": {
         description: {
             en: `Starts a wild Pokémon battle using a specific graphic style.`,
-            zh: `使用指定的图形样式进入野外宝可梦对战。`
+            zh: `进入指定类型的野外宝可梦对战。`
         },
         bytes: 10,
         params: [
@@ -4724,5 +4795,4 @@ const commands: WordData = {
 export {
     macros,
     commands,
-    rawTypes
-};
+    rawTy
