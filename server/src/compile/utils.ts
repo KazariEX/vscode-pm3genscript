@@ -55,16 +55,21 @@ export function getByteDataByString(str: string): number[]
                 transfer += char;
             }
             else {
-                let escape = false;
-                if (char === "\\" && i < chars.length) {
+                if (char === "\\" && i + 1 < chars.length) {
                     char += chars[i + 1];
-                    escape = true;
+                    i++;
                 }
-                if (char in character_zh_table_invert) {
-                    if (escape === true) {
-                        escape = false;
-                        i++;
+                if (char === "\\h") {
+                    const n = chars[i + 1] + chars[i + 2];
+                    if (/[0-9a-zA-Z]{2}/.test(n)) {
+                        res.push(Number.parseInt(`0x${n}`));
+                        i += 2;
                     }
+                    else {
+                        throw char;
+                    }
+                }
+                else if (char in character_zh_table_invert) {
                     const code = character_zh_table_invert[char];
                     const data = getByteDataByCharCode(code);
                     res.push(...data);

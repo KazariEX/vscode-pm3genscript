@@ -77,6 +77,10 @@
 				"begin": "\"",
 				"end": "\"",
 				"patterns": [
+          {
+            "name": "constant.character.escape",
+            "match": "\\\\h[0-9a-zA-Z]{2}"
+          },
 					{
 						"name": "constant.character.escape",
 						"match": "\\\\."
