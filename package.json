@@ -6,7 +6,7 @@
   "publisher": "KazariEX",
   "repository": "https://github.com/MysteryBao37/vscode-pm3genscript",
   "engines": {
-    "vscode": "^1.83.0"
+    "vscode": "^1.81.0"
   },
   "categories": [
     "Programming Languages"

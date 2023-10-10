@@ -4,7 +4,7 @@ import { tokenTypes } from "./lexer";
 class PTSParser extends CstParser {
     constructor()
     {
-        super(tokenTypes);
+        super(tokenTypes, { recoveryEnabled: true });
         this.performSelfAnalysis();
     }
 

@@ -1,4 +1,4 @@
-import { CancellationToken, Position, ProviderResult, SignatureHelp, SignatureInformation, SignatureHelpContext, SignatureHelpProvider, TextDocument, MarkdownString } from "vscode";
+import * as vscode from "vscode";
 import { commands, macros } from "../data";
 import { capitalizeFirstLetter } from "../utils";
 
@@ -7,8 +7,21 @@ const all = {
     ...macros
 };
 
-export default class pm3genSignatureHelpProvider implements SignatureHelpProvider {
-    provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelp> | null {
+export default class PM3GenSignatureHelpProvider implements vscode.SignatureHelpProvider
+{
+    public static register(context: vscode.ExtensionContext, languageId: string): vscode.Disposable
+    {
+        const provider = new PM3GenSignatureHelpProvider(context);
+        const providerRegistration = vscode.languages.registerSignatureHelpProvider(languageId, provider, " ");
+        return providerRegistration;
+    }
+
+    constructor(
+        private readonly context: vscode.ExtensionContext
+    ) {}
+
+    provideSignatureHelp(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.SignatureHelpContext): vscode.ProviderResult<vscode.SignatureHelp>
+    {
         //光标位置
         const char = position.character;
 
@@ -56,9 +69,9 @@ export default class pm3genSignatureHelpProvider implements SignatureHelpProvide
             return null;
         }
 
-        const signatureInfo = new SignatureInformation(fullWord + " " + all[word].params.map((item) => {
+        const signatureInfo = new vscode.SignatureInformation(fullWord + " " + all[word].params.map((item) => {
             return `[${item.name}]`;
-        }).join(" "), new MarkdownString(all[word].description.zh?.trim()));
+        }).join(" "), new vscode.MarkdownString(all[word].description.zh?.trim()));
 
         signatureInfo.parameters.push(...all[word].params.map((item) => {
             let type = "";
@@ -75,7 +88,7 @@ export default class pm3genSignatureHelpProvider implements SignatureHelpProvide
             };
         }));
 
-        const res = new SignatureHelp();
+        const res = new vscode.SignatureHelp();
         res.activeSignature = 0;
         res.activeParameter = p;
         res.signatures.push(signatureInfo);

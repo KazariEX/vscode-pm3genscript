@@ -3,7 +3,7 @@
 	"name": "pm3genscript",
 	"patterns": [
 		{
-			"include": "#keywords"
+			"include": "#macros"
 		},
 		{
 			"include": "#commands"
@@ -28,7 +28,7 @@
 		}
 	],
 	"repository": {
-		"keywords": {
+		"macros": {
 			"patterns": [{
 				"name": "keyword.control",
 				"match": "#[a-z]+\\b"

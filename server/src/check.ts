@@ -3,13 +3,14 @@ import { EOF } from "chevrotain";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { text2ast } from "./ast";
 
-export function check(content: TextDocument): lsp.Diagnostic[]
+export function check(content: TextDocument)
 {
     const errors: lsp.Diagnostic[] = [];
     const text = content.getText();
     const uri = content.uri;
 
     const {
+        ast,
         lexErrors,
         parseErrors,
         astErrors
@@ -81,5 +82,8 @@ export function check(content: TextDocument): lsp.Diagnostic[]
         })));
     }
 
-    return errors;
+    return {
+        ast,
+        errors
+    };
 }

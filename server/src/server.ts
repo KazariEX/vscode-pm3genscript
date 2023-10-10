@@ -36,24 +36,6 @@ documents.onDidChangeContent((change) => {
 documents.listen(connection);
 connection.listen();
 
-//语法检验与报错
-async function validateTextDocument(textDocument: TextDocument)
-{
-    const level = (await getConfiguration(textDocument.uri))?.diagnosticLevel || "info";
-    const errors = check(textDocument).filter((e) => {
-        switch (level) {
-            case "warn": return e.severity !== DiagnosticSeverity.Information;
-            case "error": return e.severity !== DiagnosticSeverity.Information && e.severity !== DiagnosticSeverity.Warning;
-        }
-        return true;
-    });
-
-    connection.sendDiagnostics({
-        uri: textDocument.uri,
-        diagnostics: errors
-    });
-}
-
 //编译
 connection.onRequest("compile", ({
     content,
@@ -67,6 +49,24 @@ connection.onRequest("compile", ({
         };
     }
 });
+
+//语法检验与报错
+async function validateTextDocument(textDocument: TextDocument)
+{
+    const level = (await getConfiguration(textDocument.uri))?.diagnosticLevel || "info";
+
+    const { errors } = check(textDocument);
+    connection.sendDiagnostics({
+        uri: textDocument.uri,
+        diagnostics: errors.filter((e) => {
+            switch (level) {
+                case "warn": return e.severity !== DiagnosticSeverity.Information;
+                case "error": return e.severity !== DiagnosticSeverity.Information && e.severity !== DiagnosticSeverity.Warning;
+            }
+            return true;
+        })
+    });
+}
 
 //获取配置项
 async function getConfiguration(uri: string)

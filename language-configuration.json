@@ -17,7 +17,8 @@
   "folding": {
     "markers": {
       "start": "^\\s*(#org)\\b",
-      "end": "^\\s*(end|goto|return)\\b"
+      "end": "^\\s*(end|return|goto|gotostd|killscript)\\b"
     }
-  }
+  },
+  "wordPattern": "(#|@)?\\w+"
 }

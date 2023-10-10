@@ -1,9 +1,22 @@
-import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode";
+import * as vscode from "vscode";
 import { commands, macros } from "../data";
 import { capitalizeFirstLetter } from "../utils";
 
-export default class pm3genHoverProvider implements HoverProvider {
-    provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover> {
+export default class PM3GenHoverProvider implements vscode.HoverProvider
+{
+    public static register(context: vscode.ExtensionContext, languageId: string): vscode.Disposable
+    {
+        const provider = new PM3GenHoverProvider(context);
+        const providerRegistration = vscode.languages.registerHoverProvider(languageId, provider);
+        return providerRegistration;
+    }
+
+    constructor(
+        private readonly context: vscode.ExtensionContext
+    ) {}
+
+    provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Hover>
+    {
         let word = document.getText(document.getWordRangeAtPosition(position));
 
         const contents = [];
