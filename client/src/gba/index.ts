@@ -53,12 +53,6 @@ export class GBA {
         const { filename } = this;
 
         return new Promise((resolve, reject) => {
-            //空位限定
-            let freespace = freeSpaceByte;
-            if (![0x00, 0xFF].includes(freeSpaceByte)) {
-                freespace = 0xFF;
-            }
-
             //开始查找
             find(startOffset);
 
@@ -92,7 +86,7 @@ export class GBA {
                     let count = 0;
 
                     for (let i = 0; i < data.length; i++) {
-                        if (data[i] === freespace) {
+                        if (data[i] === freeSpaceByte) {
                             count++;
                             if (count === length) break;
                         }
@@ -116,6 +110,33 @@ export class GBA {
     //写入编译结果
     async write(res: CompileResult)
     {
+        //空位限定
+        if (![0x00, 0xFF].includes(res.freeSpaceByte)) {
+            res.freeSpaceByte = 0xFF;
+        }
+
+        //数据删除
+        const removeBlocks: CompileBlock[] = [];
+        for (const [type, offset] of res.removes) {
+            const decompiler = new Decompiler(this.filename);
+            const gekka = await decompiler[type](offset);
+
+            const blocks = (type === "all") ? gekka.blocks : { [offset]: gekka };
+            for (const offset in blocks) {
+                const block = blocks[offset];
+                removeBlocks.push({
+                    offset: Number(offset),
+                    length: block.raw.length,
+                    data: new Array(block.raw.length).fill(res.freeSpaceByte)
+                });
+            }
+        }
+
+        //删除指定数据
+        for (const block of removeBlocks) {
+            await this.writeByOffset(block.offset, block.data);
+        }
+
         //建立动态偏移到静态偏移的映射
         const dynamicMap = {};
 
@@ -176,6 +197,6 @@ export class GBA {
     async decompile(offset: number): Promise<DecompileResult>
     {
         const decompiler = new Decompiler(this.filename);
-        return await decompiler.exec(offset);
+        return await decompiler.all(offset);
     }
 }

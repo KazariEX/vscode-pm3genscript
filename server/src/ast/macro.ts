@@ -200,6 +200,31 @@ const handlers: {
             })
         });
     },
+    remove(item, ast, errors)
+    {
+        const [p1] = item.params;
+        ast.removes.push(["script", getLiteralValue(p1, ast, errors)]);
+    },
+    removeall(item, ast, errors)
+    {
+        const [p1] = item.params;
+        ast.removes.push(["all", getLiteralValue(p1, ast, errors)]);
+    },
+    removemart(item, ast, errors)
+    {
+        const [p1] = item.params;
+        ast.removes.push(["raw_mart", getLiteralValue(p1, ast, errors)]);
+    },
+    removemove(item, ast, errors)
+    {
+        const [p1] = item.params;
+        ast.removes.push(["raw_move", getLiteralValue(p1, ast, errors)]);
+    },
+    removestring(item, ast, errors)
+    {
+        const [p1] = item.params;
+        ast.removes.push(["string", getLiteralValue(p1, ast, errors)]);
+    },
     reserve(item, ast, errors)
     {
         const block = getCurrentBlock(item, ast, errors);

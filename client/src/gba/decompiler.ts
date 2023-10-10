@@ -24,7 +24,7 @@ export enum DecompileBlockType {
     braille,
     raw_mart,
     raw_move,
-    text
+    string
 }
 
 //需要反编译的指针集合
@@ -48,17 +48,17 @@ const pointers = {
         1: DecompileBlockType.raw_move
     },
     "trainerbattle": {
-        3: DecompileBlockType.text,
-        4: DecompileBlockType.text
+        3: DecompileBlockType.string,
+        4: DecompileBlockType.string
     },
     "preparemsg": {
-        0: DecompileBlockType.text
+        0: DecompileBlockType.string
     },
     "braille": {
         0: DecompileBlockType.braille
     },
     "bufferstring": {
-        1: DecompileBlockType.text
+        1: DecompileBlockType.string
     },
     "pokemart": {
         0: DecompileBlockType.raw_mart
@@ -70,7 +70,7 @@ const pointers = {
         0: DecompileBlockType.raw_mart
     },
     "preparemsg2": {
-        0: DecompileBlockType.text
+        0: DecompileBlockType.string
     },
     "virtualgoto": {
         0: DecompileBlockType.script
@@ -85,22 +85,22 @@ const pointers = {
         1: DecompileBlockType.script
     },
     "virtualmsgbox": {
-        0: DecompileBlockType.text
+        0: DecompileBlockType.string
     },
     "virtualbuffer": {
-        1: DecompileBlockType.text
+        1: DecompileBlockType.string
     },
     "braille2": {
         0: DecompileBlockType.braille
     },
     "preparemsg3": {
-        0: DecompileBlockType.text
+        0: DecompileBlockType.string
     },
     "pokenavcall": {
-        0: DecompileBlockType.text
+        0: DecompileBlockType.string
     },
     "msgbox": {
-        0: DecompileBlockType.text
+        0: DecompileBlockType.string
     }
 };
 
@@ -113,7 +113,7 @@ export default class Decompiler {
     }
 
     //执行反编译
-    async exec(offset: number): Promise<DecompileResult>
+    async all(offset: number): Promise<DecompileResult>
     {
         const res: DecompileResult = {
             blocks: {}
@@ -145,7 +145,7 @@ export default class Decompiler {
                                 case DecompileBlockType.raw_move:
                                     b = await this.raw_move(offset);
                                     break;
-                                case DecompileBlockType.text:
+                                case DecompileBlockType.string:
                                     b = await this.text(offset);
                                     break;
                             }
@@ -264,7 +264,7 @@ export default class Decompiler {
         const data = await this.readData(offset);
         const res: DecompileBlock = {
             offset,
-            type: DecompileBlockType.text,
+            type: DecompileBlockType.string,
             raw: []
         };
 
@@ -294,7 +294,7 @@ export default class Decompiler {
         const data = await this.readData(offset);
         const res: DecompileBlock = {
             offset,
-            type: DecompileBlockType.text,
+            type: DecompileBlockType.string,
             raw: []
         };
 
@@ -324,7 +324,7 @@ export default class Decompiler {
         const data = await this.readData(offset);
         const res: DecompileTextBlock = {
             offset,
-            type: DecompileBlockType.text,
+            type: DecompileBlockType.string,
             raw: [],
             text: ""
         };
@@ -333,7 +333,7 @@ export default class Decompiler {
             const [b1, b2, b3] = data.subarray(i, i + 3);
 
             if (b1 === 0xFF) {
-                res.raw.push(...data.subarray(0, i));
+                res.raw.push(...data.subarray(0, i + 1));
                 break;
             }
 

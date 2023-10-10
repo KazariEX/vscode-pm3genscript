@@ -26,6 +26,7 @@ declare global {
             at: ASTBlock,
             break: boolean
         },
+        removes: [t: string, o: number][],
         extra: ASTExtra
     }
 
@@ -74,7 +75,8 @@ declare global {
             },
             offset: number
         },
-        freeSpaceByte: number
+        freeSpaceByte: number,
+        removes: [t: string, o: number][]
     }
 
     interface CompileBlock {

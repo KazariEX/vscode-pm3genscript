@@ -386,7 +386,7 @@ const macros: MacroData = {
     },
     "removemove": {
         description: {
-            zh: `删除在指定偏移量处找到的移动指令。`
+            zh: `删除在指定偏移量处找到的移动数据。`
         },
         hoisting: true,
         params: [
@@ -400,7 +400,26 @@ const macros: MacroData = {
         ],
         example: {
             value: "#removemove 0x1E80DF",
-            description: "0x1E80DF 处的移动指令将被删除。"
+            description: "0x1E80DF 处的移动数据将被删除。"
+        }
+    },
+    "removestring": {
+        description: {
+            zh: `删除在指定偏移量处找到的文本数据。`
+        },
+        hoisting: true,
+        params: [
+            {
+                name: "offset",
+                type: "pointer",
+                can: {
+                    dynamic: false
+                }
+            }
+        ],
+        example: {
+            value: "#removestring 0x1D73A6",
+            description: "0x1D73A6 处的文本数据将被删除。"
         }
     },
     "reserve": {

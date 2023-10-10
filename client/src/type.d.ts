@@ -15,6 +15,7 @@ declare global {
             offset: number
         },
         freeSpaceByte: number,
+        removes: [t: string, o: number][],
         error?: string
     }
 

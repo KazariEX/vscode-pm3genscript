@@ -38,6 +38,7 @@ function cst2ast(cstNode: CstNode, extra: ASTExtra)
             at: null,
             break: false
         },
+        removes: [],
         extra
     };
 

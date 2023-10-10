@@ -23,7 +23,8 @@ export function compile(content: string, uri?: string): CompileResult
                 collection: {},
                 offset: ast.dynamic.offset
             },
-            freeSpaceByte: ast.freeSpaceByte
+            freeSpaceByte: ast.freeSpaceByte,
+            removes: ast.removes
         };
 
         //显示定义列表

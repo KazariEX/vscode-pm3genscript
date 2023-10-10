@@ -35,10 +35,6 @@
 
 编译器宏：
 - clean
-- remove
-- removeall
-- removemart
-- removemove
 
 # 已知的问题
 
