@@ -21,17 +21,16 @@ const dynamic = createToken({ name: "dynamic", pattern: /@\w+\b/ });
 const literal = createToken({ name: "literal", pattern: /\b(0x[0-9A-Fa-f]+)|([0-9]+)\b/ });
 
 //字符串
-const string = createToken({ name: "string", pattern: /"[^\\"]*(?:\\.[^"\\]*)*"/ });
+const string = createToken({ name: "string", pattern: /"[^\\"]*(\\.[^"\\]*)*"/ });
+
+//注释
+const comment = createToken({ name: "comment", pattern: /(\/\/.*)|(\/\*[^/]*\*\/)\n?/, group: Lexer.SKIPPED });
 
 //换行
 const pop_endline = createToken({ name: "pop-endline", pattern: /\r\n|\r|\n/, line_breaks: true, pop_mode: true });
 
 //空格
-const whitespace = createToken({
-    name: "whitespace",
-    pattern: /\s+/,
-    group: Lexer.SKIPPED
-});
+const whitespace = createToken({ name: "whitespace", pattern: /\s+/, group: Lexer.SKIPPED });
 
 export const tokenTypes = {
     macro,
@@ -43,15 +42,16 @@ export const tokenTypes = {
     dynamic,
     literal,
     string,
+    comment,
     pop_endline,
     whitespace
 };
 
 export const ptsLexer = new Lexer({
     modes: {
-        main: [raw, macro, if0, command, symbol, dynamic, literal, string, whitespace],
-        macro: [command, symbol, dynamic, literal, string, pop_endline, whitespace],
-        raw: [symbol, literal, raw_type, pop_endline, whitespace]
+        main: [raw, macro, if0, command, symbol, dynamic, literal, string, comment, whitespace],
+        macro: [command, symbol, dynamic, literal, string, comment, pop_endline, whitespace],
+        raw: [symbol, literal, raw_type, comment, pop_endline, whitespace]
     },
     defaultMode: "main"
 });
