@@ -1,5 +1,6 @@
 import { CommandData } from "./data";
 import { DecompileBlockType } from "./gba/decompiler";
+import { Pointer } from "./gba/pointer";
 
 declare global {
     interface CompileResult {
@@ -34,7 +35,7 @@ declare global {
     }
 
     interface DecompileBlock {
-        offset: number,
+        pointer: Pointer,
         type: DecompileBlockType,
         raw: number[],
         plaintext?: string
@@ -56,6 +57,13 @@ declare global {
         cmd: string,
         template: CommandData[any],
         params: number[]
+    }
+
+    interface GBAConfiguration {
+        rom?: string,
+        compilerOptions?: {
+            removeAllIgnore?: string[]
+        }
     }
 }
 

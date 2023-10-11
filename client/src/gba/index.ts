@@ -3,14 +3,17 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { Buffer } from "node:buffer";
 import Decompiler from "./decompiler";
-import { getByteArrayByPointer, getConfiguration, removeMemoryBank } from "../utils";
+import { filterObjectKeys, getConfiguration } from "../utils";
+import { Pointer } from "./pointer";
 
 export class GBA {
     filename: string;
+    conf: GBAConfiguration;
 
-    constructor(filename?: string)
+    private constructor(filename: string, conf: GBAConfiguration = {})
     {
         this.filename = filename;
+        this.conf = conf;
     }
 
     //打开ROM，返回GBA实例
@@ -19,14 +22,16 @@ export class GBA {
         //默认为当前活跃文本编辑器的URI
         relatedUri ??= vscode.window.activeTextEditor.document.uri;
 
+        //获取配置文件
+        const { conf, dir } = getConfiguration(relatedUri.fsPath);
+
         let filename = "";
         if (relatedUri?.scheme === "file") {
             const { fsPath } = relatedUri;
             if (path.extname(fsPath) === "gba") {
                 filename = fsPath;
             }
-            else {
-                const { conf, dir } = getConfiguration(relatedUri.fsPath);
+            else if (conf.rom) {
                 filename = path.isAbsolute(conf.rom) ? conf.rom : path.join(dir, conf.rom);
             }
         }
@@ -44,17 +49,17 @@ export class GBA {
             }
             filename = uris[0].fsPath;
         }
-        return new GBA(filename);
+        return new GBA(filename, conf);
     }
 
     //寻找空位
-    findFreeSpace(startOffset: number, length: number, freeSpaceByte: number = 0xFF): Promise<number>
+    findFreeSpace(pointer: Pointer, length: number, freeSpaceByte: number = 0xFF): Promise<Pointer>
     {
         const { filename } = this;
 
         return new Promise((resolve, reject) => {
             //开始查找
-            find(startOffset);
+            find(pointer.value);
 
             function find(startOffset: number)
             {
@@ -97,7 +102,8 @@ export class GBA {
                     }
 
                     if (count >= length && start + count <= data.length) {
-                        resolve(startOffset + start);
+                        const finding = new Pointer(startOffset + start);
+                        resolve(finding);
                     }
                     else {
                         find(startOffset + start);
@@ -115,45 +121,47 @@ export class GBA {
             res.freeSpaceByte = 0xFF;
         }
 
-        //数据删除
-        const removeBlocks: CompileBlock[] = [];
+        //反编译需要删除的偏移地址
         for (const [type, offset] of res.removes) {
+            const pointer = new Pointer(offset);
             const decompiler = new Decompiler(this.filename);
-            const gekka = await decompiler[type](offset);
+            const gekka = await decompiler[type](pointer);
 
-            const blocks = (type === "all") ? gekka.blocks : { [offset]: gekka };
-            for (const offset in blocks) {
-                const block = blocks[offset];
-                removeBlocks.push({
-                    offset: Number(offset),
-                    length: block.raw.length,
-                    data: new Array(block.raw.length).fill(res.freeSpaceByte)
-                });
+            //连锁偏移忽略
+            const blocks = (type === "all") ? filterObjectKeys(gekka.blocks, (key: number, index: number) => {
+                return !(index > 0 && (this.conf.compilerOptions?.removeAllIgnore?.some?.((item) => {
+                    return Pointer.equal(`0x${item}`, key);
+                }) ?? false));
+            }) : { [offset]: gekka };
+
+            //删除指定数据
+            for (const key in blocks) {
+                const block = blocks[key];
+                const data = new Array(block.raw.length).fill(res.freeSpaceByte);
+                await this.writeSingly(block.pointer, data);
             }
         }
 
-        //删除指定数据
-        for (const block of removeBlocks) {
-            await this.writeByOffset(block.offset, block.data);
-        }
-
         //建立动态偏移到静态偏移的映射
-        const dynamicMap = {};
+        const dynamicMap: {
+            [name: string]: Pointer
+        } = {};
 
         //找到所有空位
-        let startOffset = res.dynamic.offset;
+        const startPointer = new Pointer(res.dynamic.offset);
         for (const block of res.blocks) {
             if (block.dynamicName) {
-                block.offset = await this.findFreeSpace(startOffset, block.length, res.freeSpaceByte);
-                dynamicMap[block.dynamicName] = block.offset;
-                startOffset = block.offset + block.length;
+                const pointer = await this.findFreeSpace(startPointer, block.length, res.freeSpaceByte);
+                block.offset = pointer.value;
+                dynamicMap[block.dynamicName] = pointer;
+                startPointer.value = block.offset + block.length;
             }
         }
 
         //补全动态偏移参数
         for (const name in res.dynamic.collection) {
-            const offset = dynamicMap[name];
-            const data = getByteArrayByPointer(offset, res.autobank);
+            const pointer = dynamicMap[name];
+            const data = pointer.toByteArray(res.autobank);
 
             res.dynamic.collection[name].forEach(([i, j, k]) => {
                 res.blocks[i].data[j][k] = data;
@@ -162,18 +170,16 @@ export class GBA {
 
         //写入全部数据
         for (const block of res.blocks) {
-            await this.writeByOffset(block.offset, block.data.flat(2));
+            await this.writeSingly(new Pointer(block.offset), block.data.flat(2));
         }
     }
 
     //写入单组数据
-    private writeByOffset(offset: number, content: number[])
+    private writeSingly(pointer: Pointer, content: number[])
     {
-        offset = removeMemoryBank(offset);
-        if (offset >= 0x8000000) offset -= 0x8000000;
         return new Promise((resolve, reject) => {
             const ws = fs.createWriteStream(this.filename, {
-                start: offset,
+                start: pointer.value,
                 flags: "r+"
             });
 
@@ -187,16 +193,16 @@ export class GBA {
                     reject(err);
                 }
                 else {
-                    resolve(offset);
+                    resolve(pointer);
                 }
             });
         });
     }
 
     //反编译
-    async decompile(offset: number): Promise<DecompileResult>
+    async decompile(pointer: Pointer): Promise<DecompileResult>
     {
         const decompiler = new Decompiler(this.filename);
-        return await decompiler.all(offset);
+        return await decompiler.all(pointer);
     }
 }

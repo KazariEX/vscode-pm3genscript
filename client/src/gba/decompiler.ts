@@ -2,8 +2,9 @@ import * as fs from "fs";
 import * as lodash from "lodash";
 import * as path from "path";
 import * as YAML from "yaml";
+import { Pointer } from "./pointer";
 import { commands } from "../data";
-import { getLengthByParamType, getValueByByteArray, numberToHexString, removeMemoryBank } from "../utils";
+import { getLengthByParamType, getValueByByteArray, getHexStringByNumber } from "../utils";
 
 //字符表
 const character_zh_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../../data/table/character_zh.yaml"), "utf8"));
@@ -113,7 +114,7 @@ export default class Decompiler {
     }
 
     //执行反编译
-    async all(offset: number): Promise<DecompileResult>
+    async all(pointer: Pointer): Promise<DecompileResult>
     {
         const res: DecompileResult = {
             blocks: {}
@@ -127,29 +128,29 @@ export default class Decompiler {
                     const template = pointers[command.cmd];
 
                     for (const index in template) {
-                        const offset = command.params[index];
+                        const pointer = new Pointer(command.params[index]);
                         //该脚本块尚未反编译
-                        if (!(offset in res.blocks)) {
+                        if (!(pointer.value in res.blocks)) {
                             let b;
                             switch (template[index]) {
                                 case DecompileBlockType.script:
-                                    b = await this.script(offset);
+                                    b = await this.script(pointer);
                                     await chain(b);
                                     break;
                                 case DecompileBlockType.braille:
-                                    b = await this.braille(offset);
+                                    b = await this.braille(pointer);
                                     break;
                                 case DecompileBlockType.raw_mart:
-                                    b = await this.raw_mart(offset);
+                                    b = await this.raw_mart(pointer);
                                     break;
                                 case DecompileBlockType.raw_move:
-                                    b = await this.raw_move(offset);
+                                    b = await this.raw_move(pointer);
                                     break;
                                 case DecompileBlockType.string:
-                                    b = await this.text(offset);
+                                    b = await this.text(pointer);
                                     break;
                             }
-                            res.blocks[offset] = b;
+                            res.blocks[pointer.value] = b;
                         }
                     }
                 }
@@ -157,8 +158,8 @@ export default class Decompiler {
         };
 
         //起始脚本块
-        const block = await this.script(offset);
-        res.blocks[offset] = block;
+        const block = await this.script(pointer);
+        res.blocks[pointer.value] = block;
         await chain(block);
 
         //合成纯文本
@@ -170,11 +171,11 @@ export default class Decompiler {
     }
 
     //脚本块：指令
-    async script(offset: number): Promise<DecompileScriptBlock>
+    async script(pointer: Pointer): Promise<DecompileScriptBlock>
     {
-        const data = await this.readData(offset);
+        const data = await this.readData(pointer);
         const res: DecompileScriptBlock = {
-            offset,
+            pointer,
             type: DecompileBlockType.script,
             raw: [],
             commands: []
@@ -212,12 +213,10 @@ export default class Decompiler {
         compound(res.commands);
 
         //生成纯文本
-        res.plaintext = `#org ${
-            numberToHexString(removeMemoryBank(offset))
-        }\n${res.commands.map((command) => {
+        res.plaintext = `#org ${pointer}\n${res.commands.map((command) => {
             let line = command.cmd;
             if (command.params.length > 0) {
-                line += " " + command.params.map((param) => numberToHexString(param)).join(" ");
+                line += " " + command.params.map((param) => getHexStringByNumber(param)).join(" ");
             }
             return line;
         }).join("\n")}`;
@@ -226,11 +225,11 @@ export default class Decompiler {
     }
 
     //脚本块：盲文
-    async braille(offset: number): Promise<DecompileBrailleBlock>
+    async braille(pointer: Pointer): Promise<DecompileBrailleBlock>
     {
-        const data = await this.readData(offset);
+        const data = await this.readData(pointer);
         const res: DecompileBrailleBlock = {
-            offset,
+            pointer,
             type: DecompileBlockType.braille,
             raw: [],
             braille: ""
@@ -251,19 +250,17 @@ export default class Decompiler {
         }
 
         //生成纯文本
-        res.plaintext = `#org ${
-            numberToHexString(removeMemoryBank(offset))
-        }\n#braille "${res.braille}"`;
+        res.plaintext = `#org ${pointer}\n#braille "${res.braille}"`;
 
         return res;
     }
 
     //脚本块：商店数据
-    async raw_mart(offset: number): Promise<DecompileBlock>
+    async raw_mart(pointer: Pointer): Promise<DecompileBlock>
     {
-        const data = await this.readData(offset);
+        const data = await this.readData(pointer);
         const res: DecompileBlock = {
-            offset,
+            pointer,
             type: DecompileBlockType.string,
             raw: []
         };
@@ -279,21 +276,19 @@ export default class Decompiler {
         }
 
         //生成纯文本
-        res.plaintext = `#org ${
-            numberToHexString(removeMemoryBank(offset))
-        }\n${lodash.chunk(res.raw, 2).map((byte) => {
-            return `#raw word ${numberToHexString(byte[1] * 0x100 + byte[0])}`;
+        res.plaintext = `#org ${pointer}\n${lodash.chunk(res.raw, 2).map((byte) => {
+            return `#raw word ${getHexStringByNumber(byte[1] * 0x100 + byte[0])}`;
         }).join("\n")}`;
 
         return res;
     }
 
     //脚本块：移动数据
-    async raw_move(offset: number): Promise<DecompileBlock>
+    async raw_move(pointer: Pointer): Promise<DecompileBlock>
     {
-        const data = await this.readData(offset);
+        const data = await this.readData(pointer);
         const res: DecompileBlock = {
-            offset,
+            pointer,
             type: DecompileBlockType.string,
             raw: []
         };
@@ -309,21 +304,19 @@ export default class Decompiler {
         }
 
         //生成纯文本
-        res.plaintext = `#org ${
-            numberToHexString(removeMemoryBank(offset))
-        }\n${res.raw.map((byte) => {
-            return `#raw ${numberToHexString(byte)}`;
+        res.plaintext = `#org ${pointer}\n${res.raw.map((byte) => {
+            return `#raw ${getHexStringByNumber(byte)}`;
         }).join("\n")}`;
 
         return res;
     }
 
     //脚本块：文本
-    async text(offset: number): Promise<DecompileTextBlock>
+    async text(pointer: Pointer): Promise<DecompileTextBlock>
     {
-        const data = await this.readData(offset);
+        const data = await this.readData(pointer);
         const res: DecompileTextBlock = {
-            offset,
+            pointer,
             type: DecompileBlockType.string,
             raw: [],
             text: ""
@@ -360,22 +353,18 @@ export default class Decompiler {
             i++;
         }
 
-
         //生成纯文本
-        res.plaintext = `#org ${
-            numberToHexString(removeMemoryBank(offset))
-        }\n= "${res.text}"`;
+        res.plaintext = `#org ${pointer}\n= "${res.text}"`;
 
         return res;
     }
 
     //读取数据
-    private readData(offset: number): Promise<Buffer>
+    private readData(pointer: Pointer): Promise<Buffer>
     {
-        offset = removeMemoryBank(offset);
         return new Promise((resolve, reject) => {
             const rs = fs.createReadStream(this.filename, {
-                start: offset
+                start: pointer.value
             });
 
             rs.on("error", (err) => {

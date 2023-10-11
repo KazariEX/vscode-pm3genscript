@@ -9,8 +9,9 @@ import {
 import PM3GenCompletionItemProvider from "./features/completionItemProvider";
 import PM3GenHoverProvider from "./features/hoverProvider";
 import PM3GenSignatureHelpProvider from "./features/signatureHelpProvider";
-import { arrayToHexString, numberToHexString } from "./utils";
+import { getHexStringByArray, getHexStringByNumber } from "./utils";
 import { GBA } from "./gba";
+import { Pointer } from "./gba/pointer";
 
 export class PM3GenClient
 {
@@ -81,8 +82,8 @@ export class PM3GenClient
 
                 //脚本块
                 this.outputChannel.appendLine(res.blocks.map((block) => {
-                    const title = block.dynamicName ?? numberToHexString(block.offset);
-                    return `${title} [${block.length}]\n` + arrayToHexString(block.data.flat(2));
+                    const title = block.dynamicName ?? getHexStringByNumber(block.offset);
+                    return `${title} [${block.length}]\n` + getHexStringByArray(block.data.flat(2));
                 }).join("\n\n"));
 
                 vscode.window.showInformationMessage("编译成功！");
@@ -111,11 +112,11 @@ export class PM3GenClient
 
                     //脚本块
                     this.outputChannel.appendLine(res.blocks.map((block) => {
-                        let title = numberToHexString(block.offset);
+                        let title = getHexStringByNumber(block.offset);
                         if (block.dynamicName) {
                             title = `${block.dynamicName} => ${title}`;
                         }
-                        return `${title} [${block.length}]\n` + arrayToHexString(block.data.flat(2));
+                        return `${title} [${block.length}]\n` + getHexStringByArray(block.data.flat(2));
                     }).join("\n\n"));
 
                     vscode.window.showInformationMessage("写入成功！");
@@ -136,7 +137,7 @@ export class PM3GenClient
                 const input = await vscode.window.showInputBox({
                     placeHolder: "请输入反编译地址(0x)……"
                 });
-                const offset = Number(`0x${input}`);
+                const offset = new Pointer(`0x${input}`);
 
                 if (offset) {
                     const res = await gba.decompile(offset);
@@ -190,7 +191,7 @@ function getDefineListString(res: CompileResult): string
 {
     let str = "";
     for (const key in res.defines) {
-        str += `\n${key} = ${numberToHexString(res.defines[key])}`;
+        str += `\n${key} = ${getHexStringByNumber(res.defines[key])}`;
     }
     if (str.length === 0) {
         return null;
