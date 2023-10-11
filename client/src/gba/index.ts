@@ -130,7 +130,7 @@ export class GBA {
             //连锁偏移忽略
             const blocks = (type === "all") ? filterObjectKeys(gekka.blocks, (key: number, index: number) => {
                 return !(index > 0 && (this.conf.compilerOptions?.removeAllIgnore?.some?.((item) => {
-                    return Pointer.equal(`0x${item}`, key);
+                    return Pointer.equal(item, key);
                 }) ?? false));
             }) : { [offset]: gekka };
 

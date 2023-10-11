@@ -1,7 +1,6 @@
 export class Pointer
 {
     #offset: number;
-    #invalid: boolean;
 
     constructor(offset: number | string)
     {
@@ -20,7 +19,7 @@ export class Pointer
 
     get invalid()
     {
-        return this.#invalid;
+        return Number.isNaN(this.#offset);
     }
 
     private assign(offset: number | string)
@@ -34,11 +33,9 @@ export class Pointer
                 offset -= 0x8000000;
             }
             this.#offset = offset;
-            this.#invalid = false;
         }
         else {
-            this.#offset = 0;
-            this.#invalid = true;
+            this.#offset = NaN;
         }
     }
 
@@ -62,7 +59,6 @@ export class Pointer
 
     static equal(a: number | string, b: number | string): boolean
     {
-        const diff = new Pointer(a).value - new Pointer(b).value;
-        return diff === 0;
+        return new Pointer(a).value === new Pointer(b).value;
     }
 }

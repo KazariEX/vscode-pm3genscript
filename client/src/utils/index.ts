@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as YAML from "yaml";
 
 //字符串首字母大写
 export function capitalizeFirstLetter(str: string): string
@@ -57,12 +58,16 @@ export function filterObjectKeys(obj: any, handler: any)
 //获取项目配置
 export function getConfiguration(uri: string)
 {
-    const filename = ".pm3genrc.json";
+    const filename = ".pm3genrc";
+    const exts = ["yaml", "yml", "json"];
 
     let dir = path.dirname(uri);
-    let target = path.join(dir, filename);
+    let ext;
 
-    while (!fs.existsSync(target)) {
+    while (!exts.some((e) => {
+        ext = e;
+        return fs.existsSync(path.join(dir, `${filename}.${e}`));
+    })) {
         const parentDir = path.join(dir, "../");
         if (parentDir === dir) {
             return {
@@ -71,12 +76,19 @@ export function getConfiguration(uri: string)
             };
         }
         dir = parentDir;
-        target = path.join(dir, filename);
     }
 
-    const file = fs.readFileSync(target);
+    const file = fs.readFileSync(path.join(dir, `${filename}.${ext}`));
+    const text = file.toString();
+
+    const conf = {
+        yaml: () => YAML.parse(text),
+        yml: () => YAML.parse(text),
+        json: () => JSON.parse(text)
+    }[ext]();
+
     return {
-        conf: JSON.parse(file.toString()),
+        conf,
         dir
     };
 }
