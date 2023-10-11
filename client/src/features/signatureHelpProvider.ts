@@ -44,6 +44,7 @@ export default class PM3GenSignatureHelpProvider implements vscode.SignatureHelp
             match = word;
         }
 
+        //判断指令是否存在
         const prefix = match[1];
         let word = match[2];
         let all;

@@ -1,6 +1,7 @@
 # 项目配置
 
 本扩展支持多种格式的配置文件：
+
 - **YAML** - 使用 ``.pm3genrc.yaml`` 或 ``.pm3genrc.yml`` 定义配置结构。
 - **JSON** - 使用 ``.pm3genrc.json`` 定义配置结构。
 
