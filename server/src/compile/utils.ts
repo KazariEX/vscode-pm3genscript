@@ -19,7 +19,7 @@ export function getByteDataByBraille(str: string): number[]
 }
 
 //从字符串获取字节数组
-export function getByteDataByString(str: string, charset: any): number[]
+export function getByteDataByString(str: string, charsets: any[]): number[]
 {
     const res = [];
     const chars = [...str];
@@ -32,8 +32,8 @@ export function getByteDataByString(str: string, charset: any): number[]
             if (char === "]") {
                 special = false;
                 transfer += char;
-                if (transfer in charset) {
-                    const code = charset[transfer];
+                const code = getCharCode(transfer, charsets);
+                if (code !== null) {
                     const data = getByteDataByCharCode(code);
                     res.push(...data);
                     transfer = "";
@@ -69,13 +69,15 @@ export function getByteDataByString(str: string, charset: any): number[]
                         throw char;
                     }
                 }
-                else if (char in charset) {
-                    const code = charset[char];
-                    const data = getByteDataByCharCode(code);
-                    res.push(...data);
-                }
                 else {
-                    throw char;
+                    const code = getCharCode(char, charsets);
+                    if (code !== null) {
+                        const data = getByteDataByCharCode(code);
+                        res.push(...data);
+                    }
+                    else {
+                        throw char;
+                    }
                 }
             }
         }
@@ -128,4 +130,15 @@ function getByteDataByCharCode(code: number): number[]
     }
     while (code > 0);
     return res;
+}
+
+//从字符集获取字符编码
+function getCharCode(char: string, charsets: any[]): number
+{
+    for (const charset of charsets) {
+        if (char in charset) {
+            return charset[char];
+        }
+    }
+    return null;
 }

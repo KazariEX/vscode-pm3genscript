@@ -4,13 +4,13 @@ import * as path from "path";
 import * as vscode from "vscode";
 import * as YAML from "yaml";
 import { Buffer } from "node:buffer";
-import { charset, readCharsetFile } from "./charset";
+import { charset, readCharset } from "./charset";
 import { Decompiler } from "./decompiler";
 import { filterObjectKeys } from "../utils";
 import { Pointer } from "./pointer";
 
 export class GBA {
-    charset: any;
+    charsets = [];
 
     private constructor(
         public filename: string,
@@ -18,14 +18,18 @@ export class GBA {
         public confDir: string
     ) {
         //自定义字符集
-        this.charset = charset[conf.charset.language];
+        this.charsets.push(charset[conf.charset.language]);
         let charsetPath = conf.charset.path;
         if (charsetPath) {
             if (!path.isAbsolute(charsetPath)) {
                 charsetPath = path.join(confDir, conf.charset.path);
             }
             if (fs.existsSync(charsetPath)) {
-                this.charset = Object.assign({}, this.charset, readCharsetFile(charsetPath));
+                const customCharset = readCharset(charsetPath);
+                if (customCharset !== null) {
+                    //头插以优先检测
+                    this.charsets.unshift(customCharset);
+                }
             }
         }
     }

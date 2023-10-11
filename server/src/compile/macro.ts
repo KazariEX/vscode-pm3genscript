@@ -31,7 +31,7 @@ const handlers: {
     {
         try {
             const str = (command.params[0].value as string).slice(1, -1);
-            const data = getByteDataByString(str, ast.extra.gba.charset);
+            const data = getByteDataByString(str, ast.extra.gba.charsets);
             data.push(0xFF);
             return [data];
         }

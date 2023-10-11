@@ -30,7 +30,9 @@ export function compile(content: string, { gba, uri }: ASTExtra): CompileResult
         };
 
         //反转字符集
-        gba.charset = invertKeyValues(gba.charset);
+        gba.charsets = gba.charsets.map((charset) => {
+            return invertKeyValues(charset);
+        });
 
         //显示定义列表
         if (ast.displayDefineList === true) {

@@ -69,14 +69,8 @@ export class PM3GenClient
         //编译
         compile: async (uri: vscode.Uri) => {
             try {
-                performance.mark("start");
-
                 const gba = await GBA.open(uri);
                 const res = await this.sendCompileRequire(gba);
-
-                performance.mark("end");
-                const measure = performance.measure("full", "start", "end");
-                console.log(measure.duration);
 
                 this.outputChannel.clear();
                 this.outputChannel.show();

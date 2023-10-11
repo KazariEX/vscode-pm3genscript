@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as lodash from "lodash";
 import { GBA } from ".";
+import { charset, getChar } from "./charset";
 import { Pointer } from "./pointer";
 import { commands } from "../data";
 import { getLengthByParamType, getValueByByteArray, getHexStringByNumber } from "../utils";
@@ -229,8 +230,8 @@ export class Decompiler {
 
         for (let i = 0; i < data.length;) {
             const byte = data[i];
-            if (byte in this.gba.charset.braille) {
-                res.braille += this.gba.charset.braille[byte];
+            if (byte in charset.braille) {
+                res.braille += charset.braille[byte];
                 res.raw.push(byte);
             }
             else {
@@ -322,22 +323,27 @@ export class Decompiler {
                 break;
             }
 
+            let char: string;
+
             const bytes3 = b1 * 0x10000 + b2 * 0x100 + b3;
-            if (bytes3 in this.gba.charset) {
-                res.text += this.gba.charset[bytes3];
+            char = getChar(bytes3, this.gba.charsets);
+            if (char !== null) {
+                res.text += char;
                 i += 3;
                 continue;
             }
 
             const bytes2 = b1 * 0x100 + b2;
-            if (bytes2 in this.gba.charset) {
-                res.text += this.gba.charset[bytes2];
+            char = getChar(bytes2, this.gba.charsets);
+            if (char !== null) {
+                res.text += char;
                 i += 2;
                 continue;
             }
 
-            if (b1 in this.gba.charset) {
-                res.text += this.gba.charset[b1];
+            char = getChar(b1, this.gba.charsets);
+            if (char !== null) {
+                res.text += char;
             }
             else {
                 res.text += " ";
