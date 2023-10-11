@@ -2,11 +2,6 @@ import * as vscode from "vscode";
 import { commands, macros } from "../data";
 import { capitalizeFirstLetter } from "../utils";
 
-const all = {
-    ...commands,
-    ...macros
-};
-
 export default class PM3GenSignatureHelpProvider implements vscode.SignatureHelpProvider
 {
     public static register(context: vscode.ExtensionContext, languageId: string): vscode.Disposable
@@ -23,10 +18,10 @@ export default class PM3GenSignatureHelpProvider implements vscode.SignatureHelp
     provideSignatureHelp(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.SignatureHelpContext): vscode.ProviderResult<vscode.SignatureHelp>
     {
         //光标位置
-        const char = position.character;
+        let char = position.character;
 
         //整行文本
-        const text = document.lineAt(position.line).text;
+        let text = document.lineAt(position.line).text;
 
         //单词尾位
         let c = 0;
@@ -34,42 +29,55 @@ export default class PM3GenSignatureHelpProvider implements vscode.SignatureHelp
         //高亮参数序号
         let p = -1;
 
-        const match = text.match(/((?:\*\/|^)\s*([#0-9a-z=]+))(\s+.*)/);
-        const fullWord = match?.[2];
+        //去除注释
+        text = text.replaceAll(/(\/\/.*)|(\/\*[^/]*\*\/)/g, (comment) => {
+            return " ".repeat(comment.length);
+        });
 
-        let word = fullWord;
-        if (word.startsWith("#")) {
-            word = word.substring(1);
-        }
-        else if (word in macros && word !== "=") {
+        //找到光标前最后一条指令
+        let match;
+        const words = text.slice(0, char).matchAll(/(#?)(\b[a-z][0-9a-z]*|=)/g);
+        if (!words) {
             return null;
         }
+        for (const word of words) {
+            match = word;
+        }
 
-        if (word in all) {
-            //重定向
-            const { redirect } = all[word];
-            if (redirect) {
-                word = redirect;
-            }
-
-            c += match[1].length;
-            if (char <= c) {
-                return null;
-            }
-            let sub: RegExpMatchArray;
-            let params = match[3] ?? "";
-            const re = /^((\s+)\w*)(\s+.*)?$/;
-            while (c < char && (sub = params?.match(re))) {
-                c += sub[1].length;
-                p += sub[2].length > 0 ? 1 : 0;
-                params = sub[3];
-            }
+        const prefix = match[1];
+        let word = match[2];
+        let all;
+        if ((prefix === "#" && (word in macros)) || word === "=") {
+            all = macros;
+        }
+        else if (word in commands) {
+            all = commands;
         }
         else {
             return null;
         }
 
-        const signatureInfo = new vscode.SignatureInformation(fullWord + " " + all[word].params.map((item) => {
+        //从该指令处开始
+        const start = match.index + match[0].length;
+        text = text.slice(start);
+        char -= start;
+
+        let sub: RegExpMatchArray;
+        let params = text;
+        const re = /^((\s+)[^\s]*)(\s+.*)?$/;
+        while (c < char && (sub = params.match(re))) {
+            c += sub[1].length;
+            p += sub[2].length > 0 ? 1 : 0;
+            params = sub[3];
+        }
+
+        //重定向
+        const { redirect } = all[word];
+        if (redirect) {
+            word = redirect;
+        }
+
+        const signatureInfo = new vscode.SignatureInformation(prefix + word + " " + all[word].params.map((item) => {
             return `[${item.name}]`;
         }).join(" "), new vscode.MarkdownString(all[word].description.zh?.trim()));
 

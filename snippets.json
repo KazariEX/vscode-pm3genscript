@@ -1,8 +1,0 @@
-{
-    "msgbox": {
-        "prefix": "msgbox",
-        "body": [
-            "msgbox $1 ${2:MSG_FACE}"
-        ]
-    }
-}

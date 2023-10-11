@@ -1,0 +1,20 @@
+{
+  "if": {
+    "prefix": "if",
+    "body": [
+      "if ${1|0x0,0x1,0x2,0x3,0x4,0x5|} ${2|goto,call|} $3"
+    ]
+  },
+  "applymovement": {
+    "prefix": "applymovement",
+    "body": [
+      "applymovement ${1|MOVE_PLAYER,MOVE_CAMERA|} $2"
+    ]
+  },
+  "msgbox": {
+    "prefix": "msgbox",
+    "body": [
+      "msgbox $1 ${2|MSG_OBTAIN,MSG_FIND,MSG_FACE,MSG_SIGN,MSG_KEEPOPEN,MSG_YESNO,MSG_NORMAL,MSG_POKENAV|}"
+    ]
+  }
+}

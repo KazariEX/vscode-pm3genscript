@@ -55,20 +55,20 @@
 		"comments": {
 			"patterns": [{
 				"name": "comment.line",
-				"match": "(//.*)"
+				"match": "//.*"
 			}, {
 				"name": "comment.block",
-				"begin": "(/\\*)",
-				"end": "(\\*/)"
+				"begin": "/\\*",
+				"end": "\\*/"
 			}]
 		},
 		"numbers": {
 			"patterns": [{
 				"name": "constant.numeric",
-				"match": "\\b0x([0-9A-Fa-f]+)\\b"
+				"match": "\\b0x[0-9A-Fa-f]+\\b"
 			}, {
 				"name": "constant.numeric",
-				"match": "\\b([0-9]+)\\b"
+				"match": "\\b[0-9]+\\b"
 			}]
 		},
 		"strings": {
@@ -87,7 +87,7 @@
 					},
           {
             "name": "constant.character.escape",
-            "match": "\\[.*\\]"
+            "match": "\\[[^\\[]*\\]"
           }
 				]
 			}]

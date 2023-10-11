@@ -21,7 +21,13 @@ export default class PM3GenHoverProvider implements vscode.HoverProvider
 
         const contents = [];
 
-        if (word in macros) {
+        if (word.startsWith("#")) {
+            word = word.substring(1);
+
+            if (!(word in macros)) {
+                return null;
+            }
+
             //重定向
             const { redirect } = macros[word];
             if (redirect) {
@@ -47,12 +53,12 @@ export default class PM3GenHoverProvider implements vscode.HoverProvider
             \n语法：
             \n#${word} ${entity.params?.map((item) => {
                 return `[${item.name}]`;
-            }).join(" ")}`;
+            }).join(" ") || ""}`;
 
             const example = `
             \n用例：
             \n${entity.example.value}
-            \n${entity.example.description}`;
+            \n${entity.example.description || ""}`;
 
             contents.push(syntax, example);
         }
@@ -90,6 +96,9 @@ export default class PM3GenHoverProvider implements vscode.HoverProvider
                 \n无参数要求。`;
             }
             contents.push(str);
+        }
+        else {
+            return null;
         }
 
         return {

@@ -45,6 +45,9 @@ export function getByteDataByString(str: string): number[]
                     throw transfer;
                 }
             }
+            else if (char === "[") {
+                throw char;
+            }
             else {
                 transfer += char;
             }

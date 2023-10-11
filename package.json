@@ -10,7 +10,7 @@
     "vscode": "^1.81.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages", "Snippets"
   ],
   "main": "./client/out/extension",
   "scripts": {
@@ -77,13 +77,13 @@
       {
         "language": "pm3genscript",
         "scopeName": "source.pm3genscript",
-        "path": "./syntax.json"
+        "path": "./syntax/grammars.json"
       }
     ],
     "snippets": [
       {
         "language": "pm3genscript",
-        "path": "./snippets.json"
+        "path": "./syntax/snippets.json"
       }
     ]
   },
