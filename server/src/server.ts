@@ -39,10 +39,11 @@ connection.listen();
 //编译
 connection.onRequest("compile", ({
     content,
+    gba,
     uri
 } = {}) => {
     try {
-        return compile(content, uri);
+        return compile(content, { gba, uri });
     } catch (err) {
         return {
             error: err.message

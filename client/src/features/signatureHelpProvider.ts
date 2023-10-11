@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { commands, macros } from "../data";
-import { capitalizeFirstLetter } from "../utils";
+import { capitalize } from "../utils";
 
 export default class PM3GenSignatureHelpProvider implements vscode.SignatureHelpProvider
 {
@@ -85,10 +85,10 @@ export default class PM3GenSignatureHelpProvider implements vscode.SignatureHelp
         signatureInfo.parameters.push(...all[word].params.map((item) => {
             let type = "";
             if (typeof item.type === "string") {
-                type = capitalizeFirstLetter(item.type);
+                type = capitalize(item.type);
             }
             else {
-                type = item.type.map((i) => capitalizeFirstLetter(i)).join(" | ");
+                type = item.type.map((i) => capitalize(i)).join(" | ");
             }
 
             return {

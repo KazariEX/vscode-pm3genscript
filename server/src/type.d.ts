@@ -2,6 +2,10 @@ import { CstNodeLocation } from "chevrotain";
 import { DiagnosticSeverity } from "vscode-languageserver";
 
 declare global {
+    interface WithLocation {
+        location: CstNodeLocation
+    }
+
     interface ASTVisitorParams {
         ast?: AST,
         errors?: PTSError[],
@@ -51,8 +55,9 @@ declare global {
     }
 
     interface ASTExtra {
-        isReferenced: boolean,
-        uri: string
+        isReferenced?: boolean,
+        uri?: string,
+        gba?: any
     }
 
     type ASTDynamicParam = ASTParam<"dynamic", string>;
@@ -86,6 +91,7 @@ declare global {
         data: number[]
     }
 
+    type ParamType = "dynamic" | "literal" | "string" | "symbol";
     interface PTSParam extends WithLocation {
         style: ParamType,
         type: string | string[],
@@ -104,10 +110,4 @@ declare global {
         message: string,
         serverity: DiagnosticSeverity
     }
-
-    interface WithLocation {
-        location: CstNodeLocation
-    }
-
-    type ParamType = "dynamic" | "literal" | "string" | "symbol";
 }

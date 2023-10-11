@@ -1,19 +1,33 @@
 import * as fs from "fs";
+import * as lodash from "lodash";
 import * as path from "path";
 import * as vscode from "vscode";
+import * as YAML from "yaml";
 import { Buffer } from "node:buffer";
-import Decompiler from "./decompiler";
-import { filterObjectKeys, getConfiguration } from "../utils";
+import { charset, readCharsetFile } from "./charset";
+import { Decompiler } from "./decompiler";
+import { filterObjectKeys } from "../utils";
 import { Pointer } from "./pointer";
 
 export class GBA {
-    filename: string;
-    conf: GBAConfiguration;
+    charset: any;
 
-    private constructor(filename: string, conf: GBAConfiguration = {})
-    {
-        this.filename = filename;
-        this.conf = conf;
+    private constructor(
+        public filename: string,
+        public conf: GBAConfiguration,
+        public confDir: string
+    ) {
+        //自定义字符集
+        this.charset = charset[conf.charset.language];
+        let charsetPath = conf.charset.path;
+        if (charsetPath) {
+            if (!path.isAbsolute(charsetPath)) {
+                charsetPath = path.join(confDir, conf.charset.path);
+            }
+            if (fs.existsSync(charsetPath)) {
+                this.charset = Object.assign({}, this.charset, readCharsetFile(charsetPath));
+            }
+        }
     }
 
     //打开ROM，返回GBA实例
@@ -23,7 +37,7 @@ export class GBA {
         relatedUri ??= vscode.window.activeTextEditor.document.uri;
 
         //获取配置文件
-        const { conf, dir } = getConfiguration(relatedUri.fsPath);
+        const { conf, confDir } = GBA.getConfiguration(relatedUri.fsPath);
 
         let filename = "";
         if (relatedUri?.scheme === "file") {
@@ -31,8 +45,8 @@ export class GBA {
             if (path.extname(fsPath) === "gba") {
                 filename = fsPath;
             }
-            else if (conf.rom) {
-                filename = path.isAbsolute(conf.rom) ? conf.rom : path.join(dir, conf.rom);
+            else if (conf.rom !== null) {
+                filename = path.isAbsolute(conf.rom) ? conf.rom : path.join(confDir, conf.rom);
             }
         }
 
@@ -49,7 +63,7 @@ export class GBA {
             }
             filename = uris[0].fsPath;
         }
-        return new GBA(filename, conf);
+        return new GBA(filename, conf, confDir);
     }
 
     //寻找空位
@@ -124,12 +138,12 @@ export class GBA {
         //反编译需要删除的偏移地址
         for (const [type, offset] of res.removes) {
             const pointer = new Pointer(offset);
-            const decompiler = new Decompiler(this.filename);
+            const decompiler = new Decompiler(this);
             const gekka = await decompiler[type](pointer);
 
             //连锁偏移忽略
             const blocks = (type === "all") ? filterObjectKeys(gekka.blocks, (key: number, index: number) => {
-                return !(index > 0 && (this.conf.compilerOptions?.removeAllIgnore?.some?.((item) => {
+                return !(index > 0 && (this.conf.compilerOptions.removeAllIgnore.some((item) => {
                     return Pointer.equal(item, key);
                 }) ?? false));
             }) : { [offset]: gekka };
@@ -202,7 +216,57 @@ export class GBA {
     //反编译
     async decompile(pointer: Pointer): Promise<DecompileResult>
     {
-        const decompiler = new Decompiler(this.filename);
+        const decompiler = new Decompiler(this);
         return await decompiler.all(pointer);
+    }
+
+    //获取项目配置
+    static getConfiguration(relatedUri: string): { conf: GBAConfiguration, confDir: string }
+    {
+        const conf: GBAConfiguration = {
+            rom: null,
+            charset: {
+                language: "zh",
+                path: null
+            },
+            compilerOptions: {
+                removeAllIgnore: []
+            }
+        };
+
+        const filename = ".pm3genrc";
+        const exts = ["yaml", "yml", "json"];
+
+        let dir = path.dirname(relatedUri);
+        let ext;
+
+        while (!exts.some((e) => {
+            ext = e;
+            return fs.existsSync(path.join(dir, `${filename}.${e}`));
+        })) {
+            const parentDir = path.join(dir, "../");
+            if (parentDir === dir) {
+                return {
+                    conf,
+                    confDir: null
+                };
+            }
+            dir = parentDir;
+        }
+
+        const file = fs.readFileSync(path.join(dir, `${filename}.${ext}`));
+        const text = file.toString();
+
+        //深层合并配置项
+        lodash.merge(conf, {
+            yaml: () => YAML.parse(text),
+            yml: () => YAML.parse(text),
+            json: () => JSON.parse(text)
+        }[ext]());
+
+        return {
+            conf,
+            confDir: dir
+        };
     }
 }

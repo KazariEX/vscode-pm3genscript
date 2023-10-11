@@ -1,9 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
-import * as YAML from "yaml";
-
 //字符串首字母大写
-export function capitalizeFirstLetter(str: string): string
+export function capitalize(str: string): string
 {
     if (str?.length > 0) {
         return str[0].toUpperCase() + str.slice(1);
@@ -22,7 +18,7 @@ export function getHexStringByArray(arr: Array<number>): string
 }
 
 //数字转十六进制字符串
-export function getHexStringByNumber(value: Number): string
+export function getHexStringByNumber(value: number): string
 {
     return `0x${value.toString(16).toUpperCase()}`;
 }
@@ -53,42 +49,4 @@ export function filterObjectKeys(obj: any, handler: any)
     return Object.keys(obj).filter(handler).reduce((res, key) => {
         return (res[key] = obj[key], res);
     }, {});
-}
-
-//获取项目配置
-export function getConfiguration(uri: string)
-{
-    const filename = ".pm3genrc";
-    const exts = ["yaml", "yml", "json"];
-
-    let dir = path.dirname(uri);
-    let ext;
-
-    while (!exts.some((e) => {
-        ext = e;
-        return fs.existsSync(path.join(dir, `${filename}.${e}`));
-    })) {
-        const parentDir = path.join(dir, "../");
-        if (parentDir === dir) {
-            return {
-                conf: {},
-                dir: null
-            };
-        }
-        dir = parentDir;
-    }
-
-    const file = fs.readFileSync(path.join(dir, `${filename}.${ext}`));
-    const text = file.toString();
-
-    const conf = {
-        yaml: () => YAML.parse(text),
-        yml: () => YAML.parse(text),
-        json: () => JSON.parse(text)
-    }[ext]();
-
-    return {
-        conf,
-        dir
-    };
 }

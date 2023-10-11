@@ -60,9 +60,13 @@ declare global {
     }
 
     interface GBAConfiguration {
-        rom?: string,
-        compilerOptions?: {
-            removeAllIgnore?: string[]
+        rom: string,
+        charset: {
+            language: string,
+            path: string
+        },
+        compilerOptions: {
+            removeAllIgnore: string[]
         }
     }
 }

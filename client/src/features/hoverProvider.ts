@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { commands, macros } from "../data";
-import { capitalizeFirstLetter } from "../utils";
+import { capitalize } from "../utils";
 
 export default class PM3GenHoverProvider implements vscode.HoverProvider
 {
@@ -88,7 +88,7 @@ export default class PM3GenHoverProvider implements vscode.HoverProvider
                 str += `
                 \n参数：
                 \n${entity.params.map((item) => {
-                    return `?? ${capitalizeFirstLetter(item.type as string)} - ${item.description}`;
+                    return `?? ${capitalize(item.type as string)} - ${item.description}`;
                 }).join("\n\n")}`;
             }
             else {

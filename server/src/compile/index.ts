@@ -1,8 +1,9 @@
 import { text2ast } from "../ast";
 import macroCompiler from "./macro";
 import commandCompiler from "./command";
+import { invertKeyValues } from "./utils";
 
-export function compile(content: string, uri?: string): CompileResult
+export function compile(content: string, { gba, uri }: ASTExtra): CompileResult
 {
     const {
         ast,
@@ -11,6 +12,7 @@ export function compile(content: string, uri?: string): CompileResult
         astErrors
     } = text2ast(content, {
         isReferenced: false,
+        gba,
         uri
     });
 
@@ -26,6 +28,9 @@ export function compile(content: string, uri?: string): CompileResult
             freeSpaceByte: ast.freeSpaceByte,
             removes: ast.removes
         };
+
+        //反转字符集
+        gba.charset = invertKeyValues(gba.charset);
 
         //显示定义列表
         if (ast.displayDefineList === true) {
@@ -54,8 +59,9 @@ export function compile(content: string, uri?: string): CompileResult
                     const data: any = [];
 
                     if (command.type === "macro") {
-                        data.push(macroCompiler(command, res));
-                    } else {
+                        data.push(macroCompiler(command, ast));
+                    }
+                    else {
                         data.push(...commandCompiler(command, i, j, res));
                     }
                     return data.flat(1);

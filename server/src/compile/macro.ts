@@ -1,7 +1,7 @@
 import { getByteDataByBraille, getByteDataByLiteral, getByteDataByString } from "./utils";
 
 const handlers: {
-    [K in keyof any]: (command: ASTCommand, res: CompileResult) => number[][]
+    [K in keyof any]: (command: ASTCommand, ast: AST) => number[][]
 } = {
     braille(command)
     {
@@ -15,11 +15,11 @@ const handlers: {
             throw new Error(`字符 "${char}" 不在盲文表内，位于行 ${command.location.startLine}。`);
         }
     },
-    raw(command, res)
+    raw(command, ast)
     {
         return command.params.map((param) => {
             return getByteDataByLiteral(param as ASTLiteralParam, {
-                autobank: res.autobank
+                autobank: ast.autobank
             });
         });
     },
@@ -27,11 +27,11 @@ const handlers: {
     {
         return [new Array(command.params[0].value as number).fill(0x01)];
     },
-    ["="](command)
+    ["="](command, ast)
     {
         try {
             const str = (command.params[0].value as string).slice(1, -1);
-            const data = getByteDataByString(str);
+            const data = getByteDataByString(str, ast.extra.gba.charset);
             data.push(0xFF);
             return [data];
         }
@@ -41,7 +41,7 @@ const handlers: {
     }
 };
 
-export default function(command: ASTCommand, res: CompileResult)
+export default function(command: ASTCommand, ast: AST)
 {
-    return handlers[command.cmd]?.(command, res);
+    return handlers[command.cmd]?.(command, ast);
 }

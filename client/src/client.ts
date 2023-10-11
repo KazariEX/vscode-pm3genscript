@@ -67,9 +67,16 @@ export class PM3GenClient
 
     readonly commands = {
         //编译
-        compile: async () => {
+        compile: async (uri: vscode.Uri) => {
             try {
-                const res = await this.sendCompileRequire();
+                performance.mark("start");
+
+                const gba = await GBA.open(uri);
+                const res = await this.sendCompileRequire(gba);
+
+                performance.mark("end");
+                const measure = performance.measure("full", "start", "end");
+                console.log(measure.duration);
 
                 this.outputChannel.clear();
                 this.outputChannel.show();
@@ -95,10 +102,10 @@ export class PM3GenClient
         //写入
         write: async (uri: vscode.Uri) => {
             try {
-                const res = await this.sendCompileRequire();
+                const gba = await GBA.open(uri);
+                const res = await this.sendCompileRequire(gba);
 
                 try {
-                    const gba = await GBA.open(uri);
                     await gba.write(res);
 
                     this.outputChannel.clear();
@@ -163,7 +170,7 @@ export class PM3GenClient
     ];
 
     //发送编译请求
-    async sendCompileRequire(): Promise<CompileResult>
+    async sendCompileRequire(gba: GBA): Promise<CompileResult>
     {
         const { document } = vscode.window.activeTextEditor;
 
@@ -174,6 +181,7 @@ export class PM3GenClient
         const content = document.getText();
         const res: CompileResult = await this.client.sendRequest("compile", {
             content,
+            gba,
             uri: document.uri.fsPath
         });
 

@@ -1,14 +1,9 @@
 import * as fs from "fs";
 import * as lodash from "lodash";
-import * as path from "path";
-import * as YAML from "yaml";
+import { GBA } from ".";
 import { Pointer } from "./pointer";
 import { commands } from "../data";
 import { getLengthByParamType, getValueByByteArray, getHexStringByNumber } from "../utils";
-
-//字符表
-const character_zh_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../../data/table/character_zh.yaml"), "utf8"));
-const braille_table = YAML.parse(fs.readFileSync(path.join(__dirname, "../../../data/table/braille.yaml"), "utf8"));
 
 //字节映射指令名
 const commands_invert = Object.keys(commands).reduce((acc, key) => {
@@ -105,13 +100,10 @@ const pointers = {
     }
 };
 
-export default class Decompiler {
-    filename: string;
-
-    constructor(filename: string)
-    {
-        this.filename = filename;
-    }
+export class Decompiler {
+    constructor(
+        private gba: GBA
+    ) {}
 
     //执行反编译
     async all(pointer: Pointer): Promise<DecompileResult>
@@ -237,8 +229,8 @@ export default class Decompiler {
 
         for (let i = 0; i < data.length;) {
             const byte = data[i];
-            if (byte in braille_table) {
-                res.braille += braille_table[byte];
+            if (byte in this.gba.charset.braille) {
+                res.braille += this.gba.charset.braille[byte];
                 res.raw.push(byte);
             }
             else {
@@ -331,21 +323,21 @@ export default class Decompiler {
             }
 
             const bytes3 = b1 * 0x10000 + b2 * 0x100 + b3;
-            if (bytes3 in character_zh_table) {
-                res.text += character_zh_table[bytes3];
+            if (bytes3 in this.gba.charset) {
+                res.text += this.gba.charset[bytes3];
                 i += 3;
                 continue;
             }
 
             const bytes2 = b1 * 0x100 + b2;
-            if (bytes2 in character_zh_table) {
-                res.text += character_zh_table[bytes2];
+            if (bytes2 in this.gba.charset) {
+                res.text += this.gba.charset[bytes2];
                 i += 2;
                 continue;
             }
 
-            if (b1 in character_zh_table) {
-                res.text += character_zh_table[b1];
+            if (b1 in this.gba.charset) {
+                res.text += this.gba.charset[b1];
             }
             else {
                 res.text += " ";
@@ -363,7 +355,7 @@ export default class Decompiler {
     private readData(pointer: Pointer): Promise<Buffer>
     {
         return new Promise((resolve, reject) => {
-            const rs = fs.createReadStream(this.filename, {
+            const rs = fs.createReadStream(this.gba.filename, {
                 start: pointer.value
             });
 

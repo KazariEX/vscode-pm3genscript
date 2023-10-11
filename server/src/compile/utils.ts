@@ -2,18 +2,15 @@ import * as fs from "fs";
 import * as path from "path";
 import * as YAML from "yaml";
 
-const character_zh_table = YAML.parse(fs.readFileSync(path.join(require.main.path, "../../data/table/character_zh.yaml"), "utf8"));
-const braille_table = YAML.parse(fs.readFileSync(path.join(require.main.path, "../../data/table/braille.yaml"), "utf8"));
+//盲文字符集
+const charset_braille = invertKeyValues(YAML.parse(fs.readFileSync(path.join(__dirname, "../../../data/charset/braille.yaml"), "utf8")));
 
-const character_zh_table_invert = invertKeyValues(character_zh_table);
-const braille_table_invert = invertKeyValues(braille_table);
-
-//从盲文表获取字节数组
+//从盲文获取字节数组
 export function getByteDataByBraille(str: string): number[]
 {
     return [...str].map((char) => {
         if (/[a-zA-Z]/.test(char)) {
-            return Number(braille_table_invert[char.toUpperCase()]);
+            return Number(charset_braille[char.toUpperCase()]);
         }
         else {
             throw char;
@@ -22,7 +19,7 @@ export function getByteDataByBraille(str: string): number[]
 }
 
 //从字符串获取字节数组
-export function getByteDataByString(str: string): number[]
+export function getByteDataByString(str: string, charset: any): number[]
 {
     const res = [];
     const chars = [...str];
@@ -35,8 +32,8 @@ export function getByteDataByString(str: string): number[]
             if (char === "]") {
                 special = false;
                 transfer += char;
-                if (transfer in character_zh_table_invert) {
-                    const code = character_zh_table_invert[transfer];
+                if (transfer in charset) {
+                    const code = charset[transfer];
                     const data = getByteDataByCharCode(code);
                     res.push(...data);
                     transfer = "";
@@ -72,8 +69,8 @@ export function getByteDataByString(str: string): number[]
                         throw char;
                     }
                 }
-                else if (char in character_zh_table_invert) {
-                    const code = character_zh_table_invert[char];
+                else if (char in charset) {
+                    const code = charset[char];
                     const data = getByteDataByCharCode(code);
                     res.push(...data);
                 }
@@ -113,7 +110,7 @@ export function getByteDataByLiteral(param: ASTLiteralParam, { autobank = true }
 }
 
 //反转键值对
-function invertKeyValues(obj: object)
+export function invertKeyValues(obj: object)
 {
     return Object.keys(obj).reduce((acc, key) => {
         acc[obj[key]] = key;
