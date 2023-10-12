@@ -122,8 +122,9 @@ export class Decompiler {
 
                     for (const index in template) {
                         const pointer = new Pointer(command.params[index]);
+
                         //该脚本块尚未反编译
-                        if (!(pointer.value in res.blocks)) {
+                        if (!(Number.isNaN(pointer.value) || (pointer.value in res.blocks))) {
                             let b;
                             switch (template[index]) {
                                 case DecompileBlockType.script:
@@ -188,6 +189,8 @@ export class Decompiler {
                 };
 
                 template.params?.forEach((p) => {
+                    if (!(p.when?.(command.params) ?? true)) return;
+
                     const len = getLengthByParamType(p.type as string);
                     const arr = data.subarray(i, i + len);
                     const value = getValueByByteArray(arr);
@@ -315,7 +318,7 @@ export class Decompiler {
             text: ""
         };
 
-        for (let i = 0; i < data.length;) {
+        $: for (let i = 0; i < data.length;) {
             const [b1, b2, b3] = data.subarray(i, i + 3);
 
             if (b1 === 0xFF) {
@@ -323,31 +326,20 @@ export class Decompiler {
                 break;
             }
 
-            let char: string;
-
-            const bytes3 = b1 * 0x10000 + b2 * 0x100 + b3;
-            char = getChar(bytes3, this.gba.charsets);
-            if (char !== null) {
-                res.text += char;
-                i += 3;
-                continue;
+            for (let j = 3; j > 0; j--) {
+                const code = {
+                    3: () => b1 * 0x10000 + b2 * 0x100 + b3,
+                    2: () => b1 * 0x100 + b2,
+                    1: () => b1
+                }[j]();
+                const char = getChar(code, this.gba.charsets);
+                if (char !== null) {
+                    res.text += char;
+                    i += j;
+                    continue $;
+                }
             }
-
-            const bytes2 = b1 * 0x100 + b2;
-            char = getChar(bytes2, this.gba.charsets);
-            if (char !== null) {
-                res.text += char;
-                i += 2;
-                continue;
-            }
-
-            char = getChar(b1, this.gba.charsets);
-            if (char !== null) {
-                res.text += char;
-            }
-            else {
-                res.text += " ";
-            }
+            res.text += " ";
             i++;
         }
 
@@ -361,6 +353,11 @@ export class Decompiler {
     private readData(pointer: Pointer): Promise<Buffer>
     {
         return new Promise((resolve, reject) => {
+            const stat = fs.statSync(this.gba.filename);
+            if (stat.size < pointer.value) {
+                resolve(Buffer.alloc(0));
+            }
+
             const rs = fs.createReadStream(this.gba.filename, {
                 start: pointer.value
             });

@@ -2,38 +2,35 @@ import { DiagnosticSeverity } from "vscode-languageserver/node";
 import { is } from "../lexer";
 
 //根据指令对参数集进行类型校验
-export function validate(item: PTSSyntax, errors: PTSError[]): boolean
+export function checkParamType(param: PTSParam, template: any, errors: PTSError[]): boolean
 {
-    return item.params.reduce((res, p, i) => {
-        const template = item.template.params?.[i];
-        if (template === void(0)) return;
+    if (template === void(0)) return true;
 
-        const types = [];
-        if (template.enum?.length > 0) {
-            return enumlint(p, template.enum, errors) && res;
+    const types = [];
+    if (template.enum?.length > 0) {
+        return enumlint(param, template.enum, errors);
+    }
+    else {
+        //变量统一为数组
+        if (typeof template.type === "string") {
+            types.push(template.type);
         }
         else {
-            //变量统一为数组
-            if (typeof template.type === "string") {
-                types.push(template.type);
-            }
-            else {
-                types.push(...template.type);
-            }
-
-            //对指针的动态偏移
-            if (template.can?.dynamic !== false && types.includes("pointer")) {
-                types.push("dynamic");
-            }
-
-            //对字面量的定义符号
-            if (template.can?.symbol !== false && !types.includes("string") && !types.includes("command")) {
-                types.push("symbol");
-            }
-
-            return typelint(p, types, errors) && res;
+            types.push(...template.type);
         }
-    }, true);
+
+        //对指针的动态偏移
+        if (template.can?.dynamic !== false && types.includes("pointer")) {
+            types.push("dynamic");
+        }
+
+        //对字面量的定义符号
+        if (template.can?.symbol !== false && !types.includes("string") && !types.includes("command")) {
+            types.push("symbol");
+        }
+
+        return typelint(param, types, errors);
+    }
 }
 
 //枚举测试与报错

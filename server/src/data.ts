@@ -35,7 +35,8 @@ export type CommandData = {
         params?: Array<{
             name: string,
             type?: ParamType,
-            description?: string
+            description?: string,
+            when?: (params: any[]) => boolean
         }>,
         value?: number
     }
@@ -2315,7 +2316,20 @@ const commands: CommandData = {
             {
                 name: "offset",
                 type: "pointer",
-                description: "Pointer to the defeat text"
+                description: "Pointer to the defeat text",
+                when: (params) => params[0] !== 0x3
+            },
+            {
+                name: "offset",
+                type: "pointer",
+                description: "Pointer",
+                when: (params) => [0x1, 0x2, 0x4, 0x6, 0x8].includes(params[0])
+            },
+            {
+                name: "offset",
+                type: "pointer",
+                description: "Pointer",
+                when: (params) => [0x6, 0x8].includes(params[0])
             }
         ]
     },

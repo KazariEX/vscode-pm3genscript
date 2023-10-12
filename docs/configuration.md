@@ -17,9 +17,11 @@
 
 ### charset.language
 
-类型：``string``
+类型：``string | null``
 
 指定标准字符集的语言模式，取值为 ``en`` 或 ``zh``（默认值）。
+
+如果显式传入 ``null``，扩展将不载入标准字符集，完全由用户自定义。
 
 ### charset.path
 

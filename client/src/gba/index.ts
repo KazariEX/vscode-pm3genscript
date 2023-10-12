@@ -17,12 +17,17 @@ export class GBA {
         public conf: GBAConfiguration,
         public confDir: string
     ) {
+        //标准字符集
+        const { language } = conf.charset;
+        if (language !== null) {
+            this.charsets.push(charset[language]);
+        }
+
         //自定义字符集
-        this.charsets.push(charset[conf.charset.language]);
         let charsetPath = conf.charset.path;
-        if (charsetPath) {
+        if (charsetPath !== null) {
             if (!path.isAbsolute(charsetPath)) {
-                charsetPath = path.join(confDir, conf.charset.path);
+                charsetPath = path.resolve(confDir, conf.charset.path);
             }
             if (fs.existsSync(charsetPath)) {
                 const customCharset = readCharset(charsetPath);
@@ -50,7 +55,7 @@ export class GBA {
                 filename = fsPath;
             }
             else if (conf.rom !== null) {
-                filename = path.isAbsolute(conf.rom) ? conf.rom : path.join(confDir, conf.rom);
+                filename = path.resolve(confDir, conf.rom);
             }
         }
 
@@ -147,7 +152,7 @@ export class GBA {
 
             //连锁偏移忽略
             const blocks = (type === "all") ? filterObjectKeys(gekka.blocks, (key: number, index: number) => {
-                return !(index > 0 && (this.conf.compilerOptions.removeAllIgnore.some((item) => {
+                return !(index > 0 && (this.conf.compilerOptions.removeAllIgnore.some?.((item) => {
                     return Pointer.equal(item, key);
                 }) ?? false));
             }) : { [offset]: gekka };
@@ -244,11 +249,12 @@ export class GBA {
         let dir = path.dirname(relatedUri);
         let ext;
 
+        //寻找配置文件
         while (!exts.some((e) => {
             ext = e;
-            return fs.existsSync(path.join(dir, `${filename}.${e}`));
+            return fs.existsSync(path.resolve(dir, `${filename}.${e}`));
         })) {
-            const parentDir = path.join(dir, "../");
+            const parentDir = path.resolve(dir, "../");
             if (parentDir === dir) {
                 return {
                     conf,
@@ -258,15 +264,21 @@ export class GBA {
             dir = parentDir;
         }
 
-        const file = fs.readFileSync(path.join(dir, `${filename}.${ext}`));
+        //读取配置文件
+        const file = fs.readFileSync(path.resolve(dir, `${filename}.${ext}`));
         const text = file.toString();
 
         //深层合并配置项
-        lodash.merge(conf, {
+        lodash.mergeWith(conf, {
             yaml: () => YAML.parse(text),
             yml: () => YAML.parse(text),
             json: () => JSON.parse(text)
-        }[ext]());
+        }[ext](), (target, source) => {
+            //当对象类型配置项传入null时不合并
+            if (typeof target === "object" && source === null) {
+                return target;
+            }
+        });
 
         return {
             conf,

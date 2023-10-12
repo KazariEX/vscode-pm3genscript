@@ -2,7 +2,7 @@ import { IToken, CstNode, CstNodeLocation } from "chevrotain";
 import { DiagnosticSeverity } from "vscode-languageserver";
 import * as path from "path";
 import { BasePTSVisitor } from "../parser";
-import { typelint, validate, validateDynamicOffset } from "./utils";
+import { typelint, checkParamType, validateDynamicOffset } from "./utils";
 import macroHandler from "./macro";
 import commandHandler from "./command";
 import { macros, commands, rawTypes } from "../data";
@@ -115,13 +115,13 @@ export class ASTVisitor extends BasePTSVisitor {
             ctx.MacroParam?.forEach((item: CstNode, i: number) => {
                 const p = this.visit(item, { type: needs?.[i]?.type });
                 result.params.push(p);
+
+                //参数类型校验
+                result.error ||= !checkParamType(p, needs?.[i], errors);
             });
 
             //参数数量检测
             result.error ||= !checkParamsCount(result, count, errors);
-
-            //参数类型校验
-            result.error ||= !validate(result, errors);
         }
         else {
             result.error = true;
@@ -238,19 +238,26 @@ export class ASTVisitor extends BasePTSVisitor {
 
             //所需参数
             const needs = commands[result.cmd].params;
-            const count = needs?.length || 0;
 
             //实际参数
             ctx.Param?.forEach((item: CstNode, i: number) => {
                 const p = this.visit(item, { type: needs?.[i]?.type });
                 result.params.push(p);
+
+                //参数类型校验
+                result.error ||= !checkParamType(p, needs?.[i], errors);
             });
+
+            //参数数量
+            const paramValues = result.params.map((p) => {
+                return Number(p.value);
+            });
+            const count = needs?.reduce((c, p) => {
+                return c + ((p.when?.(paramValues) ?? true) ? 1 : 0);
+            }, 0) ?? 0;
 
             //参数数量检测
             result.error ||= !checkParamsCount(result, count, errors);
-
-            //参数类型校验
-            result.error ||= !validate(result, errors);
         }
         else {
             result.error = true;
