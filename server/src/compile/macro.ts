@@ -6,7 +6,7 @@ const handlers: {
     braille(command)
     {
         try {
-            const str = (command.params[0].value as string).slice(1, -1);
+            const str = (command.params[0].value as string);
             const data = getByteDataByBraille(str);
             data.push(0xFF);
             return [data];
@@ -30,7 +30,7 @@ const handlers: {
     ["="](command, ast)
     {
         try {
-            const str = (command.params[0].value as string).slice(1, -1);
+            const str = (command.params[0].value as string);
             const data = getByteDataByString(str, ast.extra.gba.charsets);
             data.push(0xFF);
             return [data];

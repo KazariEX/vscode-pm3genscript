@@ -1,14 +1,14 @@
 import { DiagnosticSeverity } from "vscode-languageserver/node";
 import { is } from "../lexer";
 
-//根据指令对参数集进行类型校验
+//根据模板对参数进行类型校验
 export function checkParamType(param: PTSParam, template: any, errors: PTSError[]): boolean
 {
     if (template === void(0)) return true;
 
     const types = [];
     if (template.enum?.length > 0) {
-        return enumlint(param, template.enum, errors);
+        return enumLint(param, template.enum, errors);
     }
     else {
         //变量统一为数组
@@ -29,12 +29,12 @@ export function checkParamType(param: PTSParam, template: any, errors: PTSError[
             types.push("symbol");
         }
 
-        return typelint(param, types, errors);
+        return typeLint(param, types, errors);
     }
 }
 
 //枚举测试与报错
-export function enumlint<T>(param: PTSParam, enums: T[], errors: PTSError[]): boolean
+export function enumLint<T>(param: PTSParam, enums: T[], errors: PTSError[]): boolean
 {
     const result = enums.includes(param.value as T);
 
@@ -46,7 +46,7 @@ export function enumlint<T>(param: PTSParam, enums: T[], errors: PTSError[]): bo
 }
 
 //类型测试与报错
-export function typelint(param: PTSParam, types: string[], errors: PTSError[]): boolean
+export function typeLint(param: PTSParam, types: string[], errors: PTSError[]): boolean
 {
     let result = false;
 
@@ -61,23 +61,36 @@ export function typelint(param: PTSParam, types: string[], errors: PTSError[]): 
     }) && false);
 }
 
-//获取变量的最终值
-export function getLiteralValue(param: PTSParam, ast: AST, errors: PTSError[]): number
+//获取参数的最终值
+export function getLiteralValue(param: PTSParam, ast: AST, errors: PTSError[]): any
 {
-    let res: number;
-    if (param.style === "symbol") {
-        res = ast.defines.get(param.value);
-        if (res === void(0)) {
-            errors.push({
-                message: "未定义的符号。",
-                location: param.location,
-                serverity: DiagnosticSeverity.Error
-            });
-            return null;
+    let res: any;
+    switch (param.style) {
+        case "dynamic": {
+            ast.dynamic.collection.command.push(param);
+            res = param.value;
+            break;
         }
-    }
-    else {
-        res = Number(param.value);
+        case "literal": {
+            res = Number(param.value);
+            break;
+        }
+        case "string": {
+            res = (param.value as string).slice(1, -1);
+            break;
+        }
+        case "symbol": {
+            res = ast.defines.get(param.value);
+            if (res === void(0)) {
+                errors.push({
+                    message: "未定义的符号。",
+                    location: param.location,
+                    serverity: DiagnosticSeverity.Error
+                });
+                return null;
+            }
+            break;
+        }
     }
     return res;
 }

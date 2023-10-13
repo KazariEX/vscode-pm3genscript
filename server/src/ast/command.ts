@@ -24,7 +24,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             value: item.template.value,
             location: item.location,
             params: item.params.map((param) => {
-                return paramHandler(param, ast, errors);
+                return paramHandler(param);
             })
         });
     }
@@ -46,7 +46,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
                     value: 0x00,
                     location: null
                 },
-                paramHandler(item.params[0], ast, errors)
+                paramHandler(item.params[0])
             ]
         });
 
@@ -56,7 +56,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             value: commands[cmd2].value,
             location: item.location,
             params: [
-                paramHandler(item.params[1], ast, errors)
+                paramHandler(item.params[1])
             ]
         });
     }
@@ -79,7 +79,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
                     value: 0x8000,
                     location: null
                 },
-                paramHandler(item.params[0], ast, errors)
+                paramHandler(item.params[0])
             ]
         });
 
@@ -95,7 +95,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
                     value: 0x8001,
                     location: null
                 },
-                paramHandler(item.params[1], ast, errors)
+                paramHandler(item.params[1])
             ]
         });
 
@@ -105,7 +105,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             value: commands[cmd3].value,
             location: item.location,
             params: [
-                paramHandler(item.params[2], ast, errors)
+                paramHandler(item.params[2])
             ]
         });
     }
@@ -129,7 +129,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
                     value: 0x8000,
                     location: null
                 },
-                paramHandler(item.params[0], ast, errors)
+                paramHandler(item.params[0])
             ]
         });
 
@@ -145,7 +145,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
                     value: 0x8001,
                     location: null
                 },
-                paramHandler(item.params[1], ast, errors)
+                paramHandler(item.params[1])
             ]
         });
 
@@ -161,7 +161,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
                     value: 0x8002,
                     location: null
                 },
-                paramHandler(item.params[2], ast, errors)
+                paramHandler(item.params[2])
             ]
         });
 
@@ -198,7 +198,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
                     value: 0x8000,
                     location: null
                 },
-                paramHandler(item.params[0], ast, errors)
+                paramHandler(item.params[0])
             ]
         });
 
@@ -229,7 +229,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             value: commands[cmd1].value,
             location: item.location,
             params: item.params.map((param) => {
-                return paramHandler(param, ast, errors);
+                return paramHandler(param);
             })
         });
 
@@ -254,13 +254,13 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             value: commands[cmd1].value,
             location: item.location,
             params: [
-                paramHandler(item.params[0], ast, errors),
-                paramHandler(item.params[1], ast, errors),
-                paramHandler(item.params[2], ast, errors)
+                paramHandler(item.params[0]),
+                paramHandler(item.params[1]),
+                paramHandler(item.params[2])
             ]
         });
 
-        const p = paramHandler(item.params[3], ast, errors);
+        const p = paramHandler(item.params[3]);
         block.commands.push({
             cmd: cmd2,
             type: item.type,
@@ -300,7 +300,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
                     value: 0x8000,
                     location: null
                 },
-                paramHandler(item.params[0], ast, errors)
+                paramHandler(item.params[0])
             ]
         });
 
@@ -321,22 +321,12 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
     }
 }
 
-function paramHandler(param: PTSParam, ast: AST, errors: PTSError[]): ASTDynamicParam | ASTLiteralParam
+function paramHandler(param: PTSParam): ASTDynamicParam | ASTLiteralParam
 {
-    let style, value;
-    if (param.style === "dynamic") {
-        ast.dynamic.collection.command.push(param);
-        style = "dynamic";
-        value = param.value;
-    }
-    else {
-        style = "literal",
-        value = getLiteralValue(param, ast, errors);
-    }
     return {
-        style,
+        style: param.style === "dynamic" ? "dynamic" : "literal",
         type: param.type as string,
-        value,
+        value: param.value,
         location: param.location
     };
 }

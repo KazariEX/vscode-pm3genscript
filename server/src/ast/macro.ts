@@ -6,19 +6,19 @@ import { getCurrentBlock, getLiteralValue } from "./utils";
 import { text2ast } from ".";
 
 const handlers: {
-    [K in keyof any]: (item: PTSSyntax, ast: AST, errors: PTSError[]) => void
+    [K in keyof any]: (item: PTSSyntax, options: { ast: AST, errors: PTSError[] }) => void
 } = {
-    alias(item, ast, errors)
+    alias(item, { ast })
     {
         const [p1, p2] = item.params;
         ast.aliases.set(p2.value, p1.value);
     },
-    autobank(item, ast, errors)
+    autobank(item, { ast })
     {
         const [p1] = item.params;
         ast.autobank = (p1.value === "off") ? false : true;
     },
-    braille(item, ast, errors)
+    braille(item, { ast, errors })
     {
         const block = getCurrentBlock(item, ast, errors);
         if (block === null) return;
@@ -37,25 +37,25 @@ const handlers: {
             })
         });
     },
-    break(item, ast, errors)
+    break(item, { ast })
     {
         ast.state.break = true;
     },
-    define(item, ast, errors)
+    define(item, { ast })
     {
         const [p1, p2] = item.params;
         ast.defines.set(p1.value, Number(p2.value));
     },
-    definelist(item, ast, errors)
+    definelist(item, { ast })
     {
         ast.displayDefineList = true;
     },
-    dynamic(item, ast, errors)
+    dynamic(item, { ast, errors })
     {
         const [p1] = item.params;
         ast.dynamic.offset = getLiteralValue(p1, ast, errors);
     },
-    erase(item, ast, errors)
+    erase(item, { ast, errors })
     {
         const [p1, p2] = item.params;
         const block: ASTBlock = {
@@ -71,7 +71,7 @@ const handlers: {
             ast.blocks.push(block);
         }
     },
-    eraserange(item, ast, errors)
+    eraserange(item, { ast, errors })
     {
         const [p1, p2] = item.params;
         const block: ASTBlock = {
@@ -87,12 +87,12 @@ const handlers: {
             ast.blocks.push(block);
         }
     },
-    freespace(item, ast, errors)
+    freespace(item, { ast, errors })
     {
         const [p1] = item.params;
         ast.freeSpaceByte = getLiteralValue(p1, ast, errors);
     },
-    include(item, ast, errors)
+    include(item, { ast, errors })
     {
         const [p1] = item.params;
         try {
@@ -162,7 +162,7 @@ const handlers: {
             });
         }
     },
-    org(item, ast, errors)
+    org(item, { ast, errors })
     {
         const [p1] = item.params;
         const block: ASTBlock = {
@@ -181,7 +181,7 @@ const handlers: {
         ast.blocks.push(block);
         ast.state.at = block;
     },
-    raw(item, ast, errors)
+    raw(item, { ast, errors })
     {
         const block = getCurrentBlock(item, ast, errors);
         if (block === null) return;
@@ -200,32 +200,32 @@ const handlers: {
             })
         });
     },
-    remove(item, ast, errors)
+    remove(item, { ast, errors })
     {
         const [p1] = item.params;
         ast.removes.push(["script", getLiteralValue(p1, ast, errors)]);
     },
-    removeall(item, ast, errors)
+    removeall(item, { ast, errors })
     {
         const [p1] = item.params;
         ast.removes.push(["all", getLiteralValue(p1, ast, errors)]);
     },
-    removemart(item, ast, errors)
+    removemart(item, { ast, errors })
     {
         const [p1] = item.params;
         ast.removes.push(["raw_mart", getLiteralValue(p1, ast, errors)]);
     },
-    removemove(item, ast, errors)
+    removemove(item, { ast, errors })
     {
         const [p1] = item.params;
         ast.removes.push(["raw_move", getLiteralValue(p1, ast, errors)]);
     },
-    removestring(item, ast, errors)
+    removestring(item, { ast, errors })
     {
         const [p1] = item.params;
         ast.removes.push(["string", getLiteralValue(p1, ast, errors)]);
     },
-    reserve(item, ast, errors)
+    reserve(item, { ast, errors })
     {
         const block = getCurrentBlock(item, ast, errors);
         if (block === null) return;
@@ -244,25 +244,25 @@ const handlers: {
             })
         });
     },
-    unalias(item, ast, errors)
+    unalias(item, { ast })
     {
         const [p1] = item.params;
         ast.aliases.delete(p1.value);
     },
-    unaliasall(item, ast, errors)
+    unaliasall(item, { ast })
     {
         ast.aliases.clear();
     },
-    undefine(item, ast, errors)
+    undefine(item, { ast })
     {
         const [p1] = item.params;
         ast.defines.delete(p1.value);
     },
-    undefineall(item, ast, errors)
+    undefineall(item, { ast })
     {
         ast.defines.clear();
     },
-    ["="](item, ast, errors)
+    ["="](item, { ast, errors })
     {
         const block = getCurrentBlock(item, ast, errors);
         if (block === null) return;
@@ -285,5 +285,5 @@ const handlers: {
 
 export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
 {
-    return handlers[item.cmd]?.(item, ast, errors);
+    return handlers[item.cmd]?.(item, { ast, errors });
 }

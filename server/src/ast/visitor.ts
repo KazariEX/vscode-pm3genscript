@@ -2,7 +2,7 @@ import { IToken, CstNode, CstNodeLocation } from "chevrotain";
 import { DiagnosticSeverity } from "vscode-languageserver";
 import * as path from "path";
 import { BasePTSVisitor } from "../parser";
-import { typelint, checkParamType, validateDynamicOffset } from "./utils";
+import { typeLint, checkParamType, validateDynamicOffset, getLiteralValue } from "./utils";
 import macroHandler from "./macro";
 import commandHandler from "./command";
 import { macros, commands, rawTypes } from "../data";
@@ -81,7 +81,7 @@ export class ASTVisitor extends BasePTSVisitor {
     }
 
     //编译器宏
-    Macro(ctx, { errors }: ASTVisitorParams): PTSSyntax
+    Macro(ctx, { ast, errors }: ASTVisitorParams): PTSSyntax
     {
         const token = ctx.macro[0];
         const result: PTSSyntax = {
@@ -202,7 +202,7 @@ export class ASTVisitor extends BasePTSVisitor {
 
         //参数类型校验
         result.error ||= !result.params.reduce((res, p) => {
-            return typelint(p, [(p.type as string), "symbol"], errors) && res;
+            return typeLint(p, [(p.type as string), "symbol"], errors) && res;
         }, true);
 
         return result;
@@ -246,6 +246,9 @@ export class ASTVisitor extends BasePTSVisitor {
 
                 //参数类型校验
                 result.error ||= !checkParamType(p, needs?.[i], errors);
+
+                //获取参数最终值
+                p.value = getLiteralValue(p, ast, errors);
             });
 
             //参数数量

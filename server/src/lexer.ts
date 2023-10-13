@@ -27,7 +27,7 @@ const string = createToken({ name: "string", pattern: /"[^\\"]*(\\.[^"\\]*)*"/ }
 const comment = createToken({ name: "comment", pattern: /(\/\/.*)|(\/\*[^/]*\*\/)\n?/, group: Lexer.SKIPPED });
 
 //换行
-const pop_endline = createToken({ name: "pop-endline", pattern: /\r\n|\r|\n/, line_breaks: true, pop_mode: true });
+const pop_endline = createToken({ name: "pop-endline", pattern: /\s*(\r\n|\r|\n)/, line_breaks: true, pop_mode: true });
 
 //空格
 const whitespace = createToken({ name: "whitespace", pattern: /\s+/, group: Lexer.SKIPPED });

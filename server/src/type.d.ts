@@ -95,7 +95,7 @@ declare global {
     interface PTSParam extends WithLocation {
         style: ParamType,
         type: string | string[],
-        value: string
+        value: any
     }
 
     interface PTSSyntax extends WithLocation {
