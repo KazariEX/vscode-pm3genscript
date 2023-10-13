@@ -31,7 +31,7 @@ class PTSParser extends CstParser {
         this.CONSUME(tokenTypes.raw);
         this.MANY(() => this.OR([
             { ALT: () => this.CONSUME(tokenTypes.symbol) },
-            { ALT: () => this.CONSUME(tokenTypes.literal) },
+            { ALT: () => this.CONSUME(tokenTypes.number) },
             { ALT: () => this.CONSUME(tokenTypes.raw_type) }
         ]));
         this.OPTION(() => this.CONSUME(tokenTypes.pop_endline));
@@ -61,7 +61,7 @@ class PTSParser extends CstParser {
             { ALT: () => this.CONSUME(tokenTypes.command) },
             { ALT: () => this.CONSUME(tokenTypes.symbol) },
             { ALT: () => this.CONSUME(tokenTypes.dynamic) },
-            { ALT: () => this.CONSUME(tokenTypes.literal) },
+            { ALT: () => this.CONSUME(tokenTypes.number) },
             { ALT: () => this.CONSUME(tokenTypes.string) }
         ]);
     });
@@ -71,7 +71,7 @@ class PTSParser extends CstParser {
         this.OR([
             { ALT: () => this.CONSUME(tokenTypes.symbol) },
             { ALT: () => this.CONSUME(tokenTypes.dynamic) },
-            { ALT: () => this.CONSUME(tokenTypes.literal) },
+            { ALT: () => this.CONSUME(tokenTypes.number) },
             { ALT: () => this.CONSUME(tokenTypes.string) }
         ]);
     });

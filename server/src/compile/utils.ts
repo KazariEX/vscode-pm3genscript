@@ -89,7 +89,7 @@ export function getByteDataByString(str: string, charsets: any[]): number[]
 }
 
 //从字面量获取字节数组
-export function getByteDataByLiteral(param: ASTLiteralParam, { autobank = true } = {}): number[]
+export function getByteDataByLiteral(param: ASTNumberParam, { autobank = true } = {}): number[]
 {
     autobank ??= true;
 

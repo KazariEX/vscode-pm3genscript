@@ -2,7 +2,7 @@
   "name": "vscode-pm3genscript",
   "displayName": "Pokemon 3rd Generation Script",
   "description": "Language support for pokemon-3rd-generation-script",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "publisher": "KazariEX",
   "repository": "https://github.com/MysteryBao37/vscode-pm3genscript",
   "icon": "resource/icon.png",

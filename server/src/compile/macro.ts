@@ -18,7 +18,7 @@ const handlers: {
     raw(command, ast)
     {
         return command.params.map((param) => {
-            return getByteDataByLiteral(param as ASTLiteralParam, {
+            return getByteDataByLiteral(param as ASTNumberParam, {
                 autobank: ast.autobank
             });
         });

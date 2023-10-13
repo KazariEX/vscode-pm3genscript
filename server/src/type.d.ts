@@ -45,7 +45,7 @@ declare global {
         cmd: string,
         type: string,
         value?: number,
-        params: Array<ASTDynamicParam | ASTLiteralParam | ASTStringParam>
+        params: Array<ASTDynamicParam | ASTNumberParam | ASTStringParam>
     }
 
     interface ASTParam<Style, Value> extends WithLocation {
@@ -61,7 +61,7 @@ declare global {
     }
 
     type ASTDynamicParam = ASTParam<"dynamic", string>;
-    type ASTLiteralParam = ASTParam<"literal", number>;
+    type ASTNumberParam = ASTParam<"number", number>;
     type ASTStringParam = ASTParam<"string", string>;
 
     interface CompileOptions {
@@ -91,7 +91,7 @@ declare global {
         data: number[]
     }
 
-    type ParamType = "dynamic" | "literal" | "string" | "symbol";
+    type ParamType = "dynamic" | "number" | "string" | "symbol";
     interface PTSParam extends WithLocation {
         style: ParamType,
         type: string | string[],

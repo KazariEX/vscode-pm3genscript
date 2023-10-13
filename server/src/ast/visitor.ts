@@ -151,7 +151,7 @@ export class ASTVisitor extends BasePTSVisitor {
         //对所有参数进行排序
         const sorted = (() => {
             const arr = [];
-            ["literal", "symbol", "raw-type"].forEach((prop) => {
+            ["number", "symbol", "raw-type"].forEach((prop) => {
                 if (prop in ctx) {
                     arr.push(...ctx[prop]);
                 }
@@ -242,6 +242,7 @@ export class ASTVisitor extends BasePTSVisitor {
             //实际参数
             ctx.Param?.forEach((item: CstNode, i: number) => {
                 const p = this.visit(item, { type: needs?.[i]?.type });
+                if (p === void(0)) return;
                 result.params.push(p);
 
                 //参数类型校验

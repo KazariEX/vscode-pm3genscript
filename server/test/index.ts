@@ -1,11 +1,8 @@
-import { compile } from "../src/compile";
+import { text2ast } from "../src/ast";
 
-const result = compile(`
+const result = text2ast(`
 #dynamic 0xA05000
 
 #org @1
-if 0x1 goto @2
-
-#org @2
-end
-`);
+if
+`, {});

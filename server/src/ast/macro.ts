@@ -192,7 +192,7 @@ const handlers: {
             location: item.location,
             params: item.params.map((param) => {
                 return {
-                    style: "literal",
+                    style: "number",
                     type: param.type as string,
                     value: getLiteralValue(param, ast, errors),
                     location: param.location
@@ -236,7 +236,7 @@ const handlers: {
             location: item.location,
             params: item.params.map((param) => {
                 return {
-                    style: "literal",
+                    style: "number",
                     type: param.type as string,
                     value: getLiteralValue(param, ast, errors),
                     location: param.location

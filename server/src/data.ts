@@ -1,4 +1,4 @@
-type ParamType = "byte" | "word" | "dword" | "pointer" | "literal" | "string" | "symbol" | "command";
+type ParamType = "byte" | "word" | "dword" | "pointer" | "number" | "string" | "symbol" | "command";
 
 export type MacroData = {
     readonly [key: string]: {
@@ -204,7 +204,7 @@ const macros: MacroData = {
             },
             {
                 name: "length",
-                type: "literal"
+                type: "number"
             }
         ],
         example: {
@@ -430,7 +430,7 @@ const macros: MacroData = {
         params: [
             {
                 name: "length",
-                type: "literal"
+                type: "number"
             }
         ],
         example: {

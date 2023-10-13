@@ -71,7 +71,7 @@ export function getLiteralValue(param: PTSParam, ast: AST, errors: PTSError[]): 
             res = param.value;
             break;
         }
-        case "literal": {
+        case "number": {
             res = Number(param.value);
             break;
         }

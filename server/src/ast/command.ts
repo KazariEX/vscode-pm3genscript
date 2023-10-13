@@ -41,7 +41,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "byte",
                     value: 0x00,
                     location: null
@@ -74,7 +74,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "word",
                     value: 0x8000,
                     location: null
@@ -90,7 +90,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "word",
                     value: 0x8001,
                     location: null
@@ -124,7 +124,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "word",
                     value: 0x8000,
                     location: null
@@ -140,7 +140,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "word",
                     value: 0x8001,
                     location: null
@@ -156,7 +156,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "word",
                     value: 0x8002,
                     location: null
@@ -172,7 +172,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "byte",
                     value: 0x9,
                     location: null
@@ -193,7 +193,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "word",
                     value: 0x8000,
                     location: null
@@ -209,7 +209,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "byte",
                     value: 0x7,
                     location: null
@@ -267,7 +267,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             value: commands[cmd2].value,
             location: item.location,
             params: [{
-                style: "literal",
+                style: "number",
                 type: "word",
                 value: (p.value as number) + 0x137,
                 location: p.location
@@ -295,7 +295,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "word",
                     value: 0x8000,
                     location: null
@@ -311,7 +311,7 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
             location: item.location,
             params: [
                 {
-                    style: "literal",
+                    style: "number",
                     type: "byte",
                     value: 0x8,
                     location: null
@@ -321,10 +321,10 @@ export default function(item: PTSSyntax, ast: AST, errors: PTSError[])
     }
 }
 
-function paramHandler(param: PTSParam): ASTDynamicParam | ASTLiteralParam
+function paramHandler(param: PTSParam): ASTDynamicParam | ASTNumberParam
 {
     return {
-        style: param.style === "dynamic" ? "dynamic" : "literal",
+        style: param.style === "dynamic" ? "dynamic" : "number",
         type: param.type as string,
         value: param.value,
         location: param.location
