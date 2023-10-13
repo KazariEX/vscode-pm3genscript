@@ -2299,9 +2299,9 @@ const commands: CommandData = {
                 description: "Kind of battle"
             },
             {
-                name: "battle",
+                name: "trainer",
                 type: "word",
-                description: "Battle # to start"
+                description: "Trainer # to battle"
             },
             {
                 name: "reserved",

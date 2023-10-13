@@ -31,7 +31,7 @@ const handlers: {
                 return {
                     style: "string",
                     type: "string",
-                    value: param.value,
+                    value: getLiteralValue(param, ast, errors),
                     location: param.location
                 };
             })
@@ -275,7 +275,7 @@ const handlers: {
                 return {
                     style: "string",
                     type: "string",
-                    value: param.value,
+                    value: getLiteralValue(param, ast, errors),
                     location: param.location
                 };
             })
