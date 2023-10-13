@@ -18,7 +18,7 @@ const symbol = createToken({ name: "symbol", pattern: /\b[A-Z_][A-Z0-9_]*\b/ });
 const dynamic = createToken({ name: "dynamic", pattern: /@\w+\b/ });
 
 //数字
-const number = createToken({ name: "number", pattern: /\b(0x[0-9A-Fa-f]+)|([0-9]+)\b/ });
+const number = createToken({ name: "number", pattern: /\b(0x[0-9A-Fa-f]+|[0-9]+)\b/ });
 
 //字符串
 const string = createToken({ name: "string", pattern: /"[^\\"]*(\\.[^"\\]*)*"/ });

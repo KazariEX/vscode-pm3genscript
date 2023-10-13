@@ -59,32 +59,50 @@ const handlers: {
     {
         const [p1, p2] = item.params;
         const block: ASTBlock = {
+            commands: [],
             location: item.location
         };
 
         block.offset = getLiteralValue(p1, ast, errors);
         const length = getLiteralValue(p2, ast, errors);
         if (length > 0) {
-            const freeSpaceByte = ast.freeSpaceByte ?? 0xFF;
-            block.data = new Array(length).fill(freeSpaceByte);
-
             ast.blocks.push(block);
+            block.commands.push({
+                cmd: "$erase",
+                type: item.type,
+                location: item.location,
+                params: [{
+                    style: "number",
+                    type: "number",
+                    value: length,
+                    location: p2.location
+                }]
+            });
         }
     },
     eraserange(item, { ast, errors })
     {
         const [p1, p2] = item.params;
         const block: ASTBlock = {
+            commands: [],
             location: item.location
         };
 
         block.offset = getLiteralValue(p1, ast, errors);
         const length = getLiteralValue(p2, ast, errors) - block.offset;
         if (length > 0) {
-            const freeSpaceByte = ast.freeSpaceByte ?? 0xFF;
-            block.data = new Array(length).fill(freeSpaceByte);
-
             ast.blocks.push(block);
+            block.commands.push({
+                cmd: "$erase",
+                type: item.type,
+                location: item.location,
+                params: [{
+                    style: "number",
+                    type: "number",
+                    value: length,
+                    location: p2.location
+                }]
+            });
         }
     },
     freespace(item, { ast, errors })

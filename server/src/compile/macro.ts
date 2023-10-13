@@ -15,6 +15,10 @@ const handlers: {
             throw new Error(`字符 "${char}" 不在盲文表内，位于行 ${command.location.startLine}。`);
         }
     },
+    $erase(command, ast)
+    {
+        return [new Array(command.params[0].value as number).fill(ast.freeSpaceByte ?? 0xFF)];
+    },
     raw(command, ast)
     {
         return command.params.map((param) => {

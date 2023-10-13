@@ -37,8 +37,7 @@ declare global {
     interface ASTBlock extends WithLocation {
         dynamicName?: string,
         offset?: number,
-        commands?: ASTCommand[],
-        data?: number[]
+        commands?: ASTCommand[]
     }
 
     interface ASTCommand extends WithLocation {

@@ -50,11 +50,6 @@ export function compile(content: string, { gba, uri }: ASTExtra): CompileResult
                 data: []
             };
 
-            //脚本块数据
-            if (item.data?.length > 0) {
-                block.data.push(...item.data);
-            }
-
             //脚本块指令
             if (item.commands?.length > 0) {
                 block.data.push(...item.commands.map((command, j) => {
