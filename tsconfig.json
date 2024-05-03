@@ -1,19 +1,11 @@
 {
-    "compilerOptions": {
-        "module": "CommonJS",
-        "target": "ESNext",
-        "lib": ["DOM", "ESNext"],
-        "outDir": "out",
-        "rootDir": "src"
-    },
-    "include": [
-        "src"
-    ],
-    "exclude": [
-        "node_modules"
-    ],
-    "references": [
-        { "path": "./client" },
-        { "path": "./server" }
-    ]
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "src"
+  ],
+  "references": [
+    { "path": "./packages/client" },
+    { "path": "./packages/server" },
+    { "path": "./packages/shared" }
+  ]
 }

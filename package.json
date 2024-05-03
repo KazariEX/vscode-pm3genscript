@@ -6,20 +6,15 @@
   "publisher": "KazariEX",
   "repository": "https://github.com/MysteryBao37/vscode-pm3genscript",
   "icon": "resource/icon.png",
-  "engines": {
-    "vscode": "^1.81.0"
-  },
   "categories": [
     "Programming Languages",
     "Snippets"
   ],
-  "main": "./client/out/extension",
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -b",
-    "watch": "tsc -b -w",
-    "lint": "eslint **/src/**/*.ts"
+  "engines": {
+    "vscode": "^1.81.0"
   },
+  "main": "./packages/client/out/extension",
+  "type": "module",
   "contributes": {
     "commands": [
       {
@@ -88,16 +83,23 @@
       }
     ]
   },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@pm3genscript/shared": "workspace:*",
+    "lodash": "^4.17.21",
+    "yaml": "^2.4.2"
+  },
   "devDependencies": {
+    "@antfu/eslint-config": "^2.16.1",
     "@types/lodash": "^4.17.0",
     "@types/node": "^20.12.8",
     "@types/vscode": "^1.89.0",
-    "@typescript-eslint/eslint-plugin": "^7.8.0",
-    "@typescript-eslint/parser": "^7.8.0",
+    "@zinkawaii/eslint-config": "^0.1.0",
     "eslint": "^9.1.1"
-  },
-  "dependencies": {
-    "lodash": "^4.17.21",
-    "yaml": "^2.4.2"
   }
 }

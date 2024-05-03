@@ -1,0 +1,6 @@
+{
+  "name": "@pm3genscript/client",
+	"dependencies": {
+		"vscode-languageclient": "^9.0.1"
+	}
+}

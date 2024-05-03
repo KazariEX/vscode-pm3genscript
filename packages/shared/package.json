@@ -1,0 +1,4 @@
+{
+  "name": "@pm3genscript/shared",
+  "main": "./out/index.js"
+}

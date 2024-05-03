@@ -1,0 +1,11 @@
+{
+  "name": "@pm3genscript/server",
+	"scripts": {
+		"test": "nodemon test/index.ts"
+	},
+	"dependencies": {
+		"chevrotain": "^9.1.0",
+		"vscode-languageserver": "^9.0.1",
+		"vscode-languageserver-textdocument": "^1.0.11"
+	}
+}
